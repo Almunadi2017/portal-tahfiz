@@ -323,9 +323,9 @@
                 <h3 class="font-bold text-slate-800 text-sm">Manajemen Data Kelas</h3>
                 <p class="text-xs text-slate-500">Kelola daftar kelas resmi sekolah sebagai susunan tingkat dan wali kelas</p>
             </div>
-            <button onclick="openKelasModal('add')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-2">
-                <i class="fa-solid fa-plus"></i><span>Tambah Kelas Baru</span>
-            </button>
+            <button onclick="openKelasModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-2">
+    <i class="fa-solid fa-plus"></i><span>Tambah Kelas</span>
+</button>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
@@ -355,9 +355,9 @@
                 <h3 class="font-bold text-slate-800 text-sm">Manajemen Data Guru Penguji & Pembimbing</h3>
                 <p class="text-xs text-slate-500">Kelola data pembimbing tahfiz serta akun login dan kelas bimbingannya</p>
             </div>
-            <button onclick="openGuruModal('add')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-2">
-                <i class="fa-solid fa-user-plus"></i><span>Tambah Guru</span>
-            </button>
+            <button onclick="openGuruModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-2">
+    <i class="fa-solid fa-user-plus"></i><span>Tambah Guru</span>
+</button>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
@@ -990,9 +990,15 @@
             }
         }, handleFirestoreError);
 
-        window.openKelasModal = function() {
-            document.getElementById('kelas-modal').classList.remove('hidden');
-            document.getElementById('kelas-form').reset();
+       window.openKelasModal = function() {
+            const modal = document.getElementById('kelas-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                const form = document.getElementById('kelas-form');
+                if (form) form.reset();
+            } else {
+                console.error("Elemen kelas-modal tidak ditemukan di HTML!");
+            }
         };
 
         window.saveKelas = async function(e) {
@@ -1041,9 +1047,15 @@
             `).join('');
         }, handleFirestoreError);
 
-        window.openGuruModal = function() {
-            document.getElementById('guru-modal').classList.remove('hidden');
-            document.getElementById('guru-form').reset();
+       window.openGuruModal = function() {
+            const modal = document.getElementById('guru-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                const form = document.getElementById('guru-form');
+                if (form) form.reset();
+            } else {
+                console.error("Elemen guru-modal tidak ditemukan di HTML!");
+            }
         };
 
         window.saveGuru = async function(e) {
