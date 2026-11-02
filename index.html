@@ -742,36 +742,57 @@
         };
 
         // Snapshot listeners
+        const updateFirebaseConnectedStatus = () => {
+            const statusEl = document.getElementById('firebase-status');
+            if(statusEl) {
+                statusEl.innerText = 'Firebase Terhubung';
+                statusEl.className = 'text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium';
+            }
+        };
+
+        const handleFirestoreError = (err) => {
+            console.error("Firestore Error:", err);
+            const statusEl = document.getElementById('firebase-status');
+            if(statusEl) {
+                statusEl.innerText = 'Akses Ditolak / Cek Rules';
+                statusEl.className = 'text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-medium';
+            }
+        };
+
         onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap) => {
+            updateFirebaseConnectedStatus();
             allSetoranData = [];
             snap.forEach(d => allSetoranData.push({ id: d.id, ...d.data() }));
             applyFilters();
-        });
+        }, handleFirestoreError);
 
         onSnapshot(query(collection(db, "students")), (snap) => {
+            updateFirebaseConnectedStatus();
             allStudentsData = [];
             snap.forEach(d => allStudentsData.push({ id: d.id, ...d.data() }));
             document.getElementById('stat-total-siswa').innerText = allStudentsData.length;
             renderStudentsTable(allStudentsData);
             renderPromotionTable(allStudentsData);
             populateStudentDropdowns(allStudentsData);
-        });
+        }, handleFirestoreError);
 
         onSnapshot(query(collection(db, "kelas")), (snap) => {
+            updateFirebaseConnectedStatus();
             allKelasData = [];
             snap.forEach(d => allKelasData.push({ id: d.id, ...d.data() }));
             renderKelasTable(allKelasData);
             populateClassDropdowns(allKelasData);
-        });
+        }, handleFirestoreError);
 
         onSnapshot(query(collection(db, "accounts")), (snap) => {
+            updateFirebaseConnectedStatus();
             allAccountsData = [];
             snap.forEach(d => allAccountsData.push({ id: d.id, ...d.data() }));
             if(allAccountsData.length === 0) {
-                addDoc(collection(db, "accounts"), { userId: "U001", username: "admin", name: "Administrator Utama", role: "Admin", linked: "ALL", password: "admin" });
+                addDoc(collection(db, "accounts"), { userId: "U001", username: "admin", name: "Administrator Utama", role: "Admin", linked: "ALL", password: "admin" }).catch(err => console.log(err));
             }
             renderAccountsTable(allAccountsData);
-        });
+        }, handleFirestoreError);
 
         window.applyFilters = function() {
             let filtered = [...allSetoranData];
@@ -962,29 +983,6 @@
             XLSX.writeFile(workbook, "template_import_siswa.xlsx");
         };
 
-        
-                        if (name) {
-                            await addDoc(collection(db, "students"), {
-                                nis: nis || '-',
-                                name: name,
-                                kelas: kelas || '-',
-                                target: target || 'Juz 30',
-                                guardian: guardian || '-',
-                                phone: phone || '-'
-                            });
-                            count++;
-                        }
-                    }
-                    alert(`Berhasil mengimpor ${count} data siswa dari Excel!`);
-                    e.target.value = ''; // reset file input
-                } catch (err) {
-                    alert("Gagal membaca file Excel: " + err.message);
-                    e.target.value = '';
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        };
-
         window.deleteStudent = async function(id) {
             if(confirm("Hapus siswa ini?")) await deleteDoc(doc(db, "students", id));
         };
@@ -1149,4 +1147,4 @@
         }
     </script>
 </body>
-</html>is 
+</html>
