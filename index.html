@@ -315,34 +315,69 @@
                     </div>
                 </div>
 
-                <!-- TAB 5: KELOLA KELAS -->
-                <div id="tab-kelola-kelas" class="hidden space-y-4">
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
-                        <div class="flex justify-between items-center">
-                            <div><h3 class="font-bold text-slate-800 text-sm">Kelola Kelas Sekolah</h3><p class="text-xs text-slate-500">Daftar tingkat kelas dan wali kelas</p></div>
-                            <button onclick="openKelasModal('add')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-2"><i class="fa-solid fa-plus"></i><span>Tambah Kelas</span></button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse text-xs">
-                                <thead><tr class="border-b border-slate-200 text-slate-500 bg-slate-50"><th class="py-3 px-4 font-semibold">Nama Kelas</th><th class="py-3 px-4 font-semibold">Wali Kelas</th><th class="py-3 px-4 font-semibold">Jumlah Siswa</th><th class="py-3 px-4 font-semibold text-center">Aksi</th></tr></thead>
-                                <tbody id="kelas-table-body" class="divide-y divide-slate-100 text-slate-700"><tr><td colspan="4" class="py-4 text-center text-slate-400">Memuat data kelas...</td></tr></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                <!-- TAB: KELOLA KELAS -->
+<div id="tab-kelola-kelas" class="hidden space-y-4">
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="font-bold text-slate-800 text-sm">Manajemen Data Kelas</h3>
+                <p class="text-xs text-slate-500">Kelola daftar kelas resmi sekolah sebagai susunan tingkat dan wali kelas</p>
+            </div>
+            <button onclick="openKelasModal('add')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-2">
+                <i class="fa-solid fa-plus"></i><span>Tambah Kelas Baru</span>
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="border-b border-slate-200 text-slate-500 bg-slate-50">
+                        <th class="py-3 px-4 font-semibold">ID Kelas</th>
+                        <th class="py-3 px-4 font-semibold">Nama Kelas</th>
+                        <th class="py-3 px-4 font-semibold">Tingkat (Grade)</th>
+                        <th class="py-3 px-4 font-semibold">Nama Wali Kelas</th>
+                        <th class="py-3 px-4 font-semibold">Jumlah Siswa Aktif</th>
+                        <th class="py-3 px-4 font-semibold text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="kelas-table-body" class="divide-y divide-slate-100 text-slate-700">
+                    <tr><td colspan="6" class="py-4 text-center text-slate-400">Memuat data kelas...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-                <!-- TAB 6: KELOLA GURU -->
-                <div id="tab-kelola-guru" class="hidden space-y-4">
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
-                        <div class="flex justify-between items-center"><h3 class="font-bold text-slate-800 text-sm">Daftar Guru Penguji Tahfiz</h3><button onclick="openGuruModal('add')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-2"><i class="fa-solid fa-user-plus"></i><span>Tambah Guru</span></button></div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse text-xs">
-                                <thead><tr class="border-b border-slate-200 text-slate-500 bg-slate-50"><th class="py-3 px-4 font-semibold">Nama Guru / Penguji</th><th class="py-3 px-4 font-semibold">Halaqah Binaan</th><th class="py-3 px-4 font-semibold">Kontak</th><th class="py-3 px-4 font-semibold text-center">Aksi</th></tr></thead>
-                                <tbody id="guru-table-body" class="divide-y divide-slate-100 text-slate-700"><tr><td colspan="4" class="py-4 text-center text-slate-400">Memuat data guru...</td></tr></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+<!-- TAB: KELOLA GURU -->
+<div id="tab-kelola-guru" class="hidden space-y-4">
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="font-bold text-slate-800 text-sm">Manajemen Data Guru Penguji & Pembimbing</h3>
+                <p class="text-xs text-slate-500">Kelola data pembimbing tahfiz serta akun login dan kelas bimbingannya</p>
+            </div>
+            <button onclick="openGuruModal('add')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-2">
+                <i class="fa-solid fa-user-plus"></i><span>Tambah Guru</span>
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="border-b border-slate-200 text-slate-500 bg-slate-50">
+                        <th class="py-3 px-4 font-semibold">ID Guru</th>
+                        <th class="py-3 px-4 font-semibold">Nama Guru / Ustadz</th>
+                        <th class="py-3 px-4 font-semibold">Username</th>
+                        <th class="py-3 px-4 font-semibold">Password</th>
+                        <th class="py-3 px-4 font-semibold">Kelas Bimbingan</th>
+                        <th class="py-3 px-4 font-semibold text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="guru-table-body" class="divide-y divide-slate-100 text-slate-700">
+                    <tr><td colspan="6" class="py-4 text-center text-slate-400">Memuat data guru...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
                 <!-- TAB 7: KELOLA SISWA -->
                 <div id="tab-kelola-siswa" class="hidden space-y-4">
@@ -519,6 +554,80 @@
         </div>
     </div>
 
+	<!-- KELAS MODAL (Sesuai Desain Referensi) -->
+<div id="kelas-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg space-y-4 text-xs">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+            <h3 class="font-bold text-slate-800 text-sm">Tambah Kelas Baru</h3>
+            <button onclick="closeModal('kelas-modal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+        </div>
+        <form id="kelas-form" onsubmit="saveKelas(event)" class="space-y-3">
+            <input type="hidden" id="kelas-id">
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Nama Kelas</label>
+                <input type="text" id="modal-kelas-name" required placeholder="Contoh: 7A, 7B, 8A, 9B" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Tingkat (Grade)</label>
+                    <select id="modal-kelas-tingkat" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg">
+                        <option value="Kelas 7">Kelas 7</option>
+                        <option value="Kelas 8">Kelas 8</option>
+                        <option value="Kelas 9">Kelas 9</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Nama Wali Kelas</label>
+                    <input type="text" id="modal-kelas-teacher" required placeholder="Contoh: Ustzh. Naimah, S.Pd" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-3">
+                <button type="button" onclick="closeModal('kelas-modal')" class="px-4 py-2 bg-slate-500 text-white font-semibold rounded-lg">Batal</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg">Simpan Data Kelas</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- GURU MODAL (Sesuai Desain Referensi) -->
+<div id="guru-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg space-y-4 text-xs">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+            <h3 class="font-bold text-slate-800 text-sm">Tambah Guru Penguji Baru</h3>
+            <button onclick="closeModal('guru-modal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+        </div>
+        <form id="guru-form" onsubmit="saveGuru(event)" class="space-y-3">
+            <input type="hidden" id="guru-id">
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Guru / Gelar</label>
+                <input type="text" id="modal-guru-name" required placeholder="Contoh: Ust. Ali Ridho, S.Pd" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Username Login</label>
+                    <input type="text" id="modal-guru-username" required placeholder="ustadz.ali" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Password Login</label>
+                    <input type="password" id="modal-guru-password" required placeholder="guru123" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg">
+                </div>
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Kelas Bimbingan</label>
+                <select id="modal-guru-linked" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg">
+                    <option value="ALL">Semua Kelas (ALL / Lintas Kelas)</option>
+                </select>
+                <p class="text-[10px] text-slate-500 mt-1">Pilih kelas bimbingan dari master data kelas atau pilih 'Semua Kelas'.</p>
+            </div>
+            <div class="flex justify-end space-x-2 pt-3">
+                <button type="button" onclick="closeModal('guru-modal')" class="px-4 py-2 bg-slate-500 text-white font-semibold rounded-lg">Batal</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg">Simpan Data Guru</button>
+            </div>
+        </form>
+    </div>
+</div>
+	
+	
     <!-- MODALS -->
     <div id="student-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md space-y-4 text-xs">
@@ -842,13 +951,126 @@
             populateStudentDropdowns(allStudentsData);
         }, handleFirestoreError);
 
+        // --- KELOLA KELAS REALTIME & RENDER ---
         onSnapshot(query(collection(db, "kelas")), (snap) => {
-            updateFirebaseConnectedStatus();
-            allKelasData = [];
-            snap.forEach(d => allKelasData.push({ id: d.id, ...d.data() }));
-            renderKelasTable(allKelasData);
-            populateClassDropdowns(allKelasData);
+            const tbody = document.getElementById('kelas-table-body');
+            if(!tbody) return;
+            const list = [];
+            snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+            
+            if(list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data kelas.</td></tr>';
+                return;
+            }
+
+            const countMap = {};
+            if(window.allStudentsData) {
+                window.allStudentsData.forEach(s => {
+                    if(s.kelas) countMap[s.kelas] = (countMap[s.kelas] || 0) + 1;
+                });
+            }
+
+            tbody.innerHTML = list.map(k => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 font-mono font-semibold">${k.idKelas || 'KLS-' + Math.floor(100+Math.random()*900)}</td>
+                    <td class="py-3 px-4 font-bold text-slate-800">${k.name}</td>
+                    <td class="py-3 px-4">${k.tingkat || 'Kelas 7'}</td>
+                    <td class="py-3 px-4">${k.teacher || '-'}</td>
+                    <td class="py-3 px-4">${countMap[k.name] || 0} Siswa</td>
+                    <td class="py-3 px-4 text-center space-x-2">
+                        <button onclick="deleteKelas('${k.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Populate dropdown kelas untuk modal guru
+            const linkedSelect = document.getElementById('modal-guru-linked');
+            if(linkedSelect) {
+                linkedSelect.innerHTML = '<option value="ALL">Semua Kelas (ALL / Lintas Kelas)</option>' + list.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            }
         }, handleFirestoreError);
+
+        window.openKelasModal = function() {
+            document.getElementById('kelas-modal').classList.remove('hidden');
+            document.getElementById('kelas-form').reset();
+        };
+
+        window.saveKelas = async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('modal-kelas-name').value;
+            const tingkat = document.getElementById('modal-kelas-tingkat').value;
+            const teacher = document.getElementById('modal-kelas-teacher').value;
+            const idKelas = 'KLS-' + Math.floor(1000 + Math.random() * 9000);
+            try {
+                await addDoc(collection(db, "kelas"), { idKelas, name, tingkat, teacher });
+                alert("Kelas baru berhasil ditambahkan!");
+                closeModal('kelas-modal');
+            } catch(err) { alert("Gagal: " + err.message); }
+        };
+
+        window.deleteKelas = async function(id) {
+            if(confirm("Hapus kelas ini?")) await deleteDoc(doc(db, "kelas", id));
+        };
+
+        // --- KELOLA GURU REALTIME & RENDER ---
+        onSnapshot(query(collection(db, "accounts")), (snap) => {
+            const tbody = document.getElementById('guru-table-body');
+            if(!tbody) return;
+            const gurus = [];
+            snap.forEach(d => {
+                const acc = d.data();
+                if(acc.role === 'GuruTahfiz' || acc.role === 'Admin') gurus.push({ id: d.id, ...acc });
+            });
+
+            if(gurus.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data guru penguji.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = gurus.map(g => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 font-mono font-semibold">${g.userId || 'G' + Math.floor(1000+Math.random()*9000)}</td>
+                    <td class="py-3 px-4 font-bold text-slate-800">${g.name}</td>
+                    <td class="py-3 px-4 font-mono">${g.username}</td>
+                    <td class="py-3 px-4 font-mono">********</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-semibold">${g.linked || 'ALL'}</span></td>
+                    <td class="py-3 px-4 text-center space-x-2">
+                        <button onclick="deleteGuru('${g.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }, handleFirestoreError);
+
+        window.openGuruModal = function() {
+            document.getElementById('guru-modal').classList.remove('hidden');
+            document.getElementById('guru-form').reset();
+        };
+
+        window.saveGuru = async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('modal-guru-name').value;
+            const username = document.getElementById('modal-guru-username').value;
+            const password = document.getElementById('modal-guru-password').value;
+            const linked = document.getElementById('modal-guru-linked').value;
+            const userId = "G" + Math.floor(1000 + Math.random() * 9000);
+
+            try {
+                await addDoc(collection(db, "accounts"), {
+                    userId,
+                    username,
+                    password,
+                    name,
+                    role: "GuruTahfiz",
+                    linked
+                });
+                alert("Guru penguji baru berhasil didaftarkan!");
+                closeModal('guru-modal');
+            } catch(err) { alert("Gagal: " + err.message); }
+        };
+
+        window.deleteGuru = async function(id) {
+            if(confirm("Hapus akun guru ini?")) await deleteDoc(doc(db, "accounts", id));
+        };
 
         onSnapshot(query(collection(db, "accounts")), (snap) => {
             updateFirebaseConnectedStatus();
