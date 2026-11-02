@@ -962,35 +962,7 @@
             XLSX.writeFile(workbook, "template_import_siswa.xlsx");
         };
 
-        /* old */
-        // window.handleExcelImport = ...
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(evt) {
-                try {
-                    const data = new Uint8Array(evt.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const rows = XLSX.utils.sheet_to_json(worksheet);
-                    
-                    if (rows.length === 0) {
-                        alert("File Excel kosong atau format tidak sesuai!");
-                        return;
-                    }
-
-                    let count = 0;
-                    for (let row of rows) {
-                        // Map potential column names (flexible)
-                        const nis = String(row.NIS || row.nis || row.Nim || row.nim || '');
-                        const name = String(row['Nama Siswa'] || row.Nama || row.nama || row.Siswa || '');
-                        const kelas = String(row.Kelas || row.kelas || '');
-                        const target = String(row['Target Juz'] || row.Target || row.target || 'Juz 30');
-                        const guardian = String(row['Nama Wali Siswa'] || row['Nama Wali'] || row.Wali || row.wali || '');
-                        let phone = String(row['No. Kontak'] || row['No Kontak'] || row.Telepon || row.HP || row.Wa || row.wa || '');
-                        if (phone.startsWith('8')) phone = '0' + phone;
-
+        
                         if (name) {
                             await addDoc(collection(db, "students"), {
                                 nis: nis || '-',
