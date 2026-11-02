@@ -867,19 +867,34 @@
         };
 
         window.updateDashboardStatsAndCharts = function(list) {
+            let filteredList = [...list];
+
+            // Filter khusus jika yang login adalah Wali Kelas atau Orang Tua
+            if (currentUserRole === 'WaliKelas' && currentUserLinked !== 'ALL') {
+                // currentUserLinked berisi nama kelas, misal "VII-1"
+                const siswaDiKelas = (window.allStudentsData || []).filter(s => s.kelas === currentUserLinked).map(s => s.name);
+                filteredList = filteredList.filter(item => siswaDiKelas.includes(item.siswa));
+            } else if (currentUserRole === 'OrangTua' && currentUserLinked !== 'ALL') {
+                // currentUserLinked berisi NIS atau Nama Anak
+                filteredList = filteredList.filter(item => item.siswa.toLowerCase().includes(currentUserLinked.toLowerCase()));
+            }
+
             let totalZiyadah = 0;
             let totalMurajaah = 0;
             let juzCounts = { '1': 0, '29': 0, '30': 0 };
-            list.forEach(data => {
+            
+            filteredList.forEach(data => {
                 if (data.jenis === 'Ziyadah') totalZiyadah++;
                 if (data.jenis === 'Murajaah') totalMurajaah++;
                 let juzKey = String(data.juz);
                 juzCounts[juzKey] = (juzCounts[juzKey] || 0) + 1;
             });
-            document.getElementById('stat-total-setoran').innerText = list.length;
+
+            document.getElementById('stat-total-setoran').innerText = filteredList.length;
             document.getElementById('stat-ziyadah').innerText = totalZiyadah;
             document.getElementById('stat-murajaah').innerText = totalMurajaah;
             updateCharts(juzCounts, totalZiyadah, totalMurajaah);
+            renderRecentTable(filteredList);
         };
 
         window.renderRecentTable = function(list) {
@@ -1411,15 +1426,77 @@
         let currentUser = null;
         window.currentFilteredMutabaah = [];
 
+        let currentUserRole = 'Admin';
+        let currentUserLinked = 'ALL';
+        let currentUserName = 'Administrator';
+
         function handleLogin(e) {
             e.preventDefault();
-            const u = document.getElementById('login-username').value.trim();
-            currentUser = u;
-            window.currentUser = u;
-            document.getElementById('user-display-name').innerText = u.toUpperCase();
-            document.getElementById('user-role').innerText = u === 'admin' ? 'Administrator' : 'Pengguna';
-            document.getElementById('login-page').classList.add('hidden');
-            document.getElementById('app-container').classList.remove('hidden');
+            const uInput = document.getElementById('login-username').value.trim();
+            const pInput = document.getElementById('login-password').value.trim();
+
+            // Cek ke data akun Firebase (allAccountsData)
+            const matchedAccount = (window.allAccountsData || []).find(acc => 
+                acc.username.toLowerCase() === uInput.toLowerCase() && acc.password === pInput
+            );
+
+            if (matchedAccount) {
+                currentUserRole = matchedAccount.role;
+                currentUserLinked = matchedAccount.linked || 'ALL';
+                currentUserName = matchedAccount.name;
+                window.currentUser = matchedAccount.name;
+
+                document.getElementById('user-display-name').innerText = matchedAccount.name;
+                document.getElementById('user-role').innerText = formatRoleName(matchedAccount.role);
+                
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+
+                // Atur visibilitas menu sidebar berdasarkan role
+                applyRoleBasedSidebar(matchedAccount.role);
+                switchTab('dashboard');
+            } else {
+                alert("Username atau Password salah! (Silakan cek data akun di database)");
+            }
+        }
+
+        function formatRoleName(role) {
+            switch(role) {
+                case 'Admin': return 'Administrator';
+                case 'GuruTahfiz': return 'Guru Penguji Tahfiz';
+                case 'WaliKelas': return 'Wali Kelas';
+                case 'KepalaSekolah': return 'Kepala Sekolah';
+                case 'OrangTua': return 'Wali Murid / Orang Tua';
+                default: return role;
+            }
+        }
+
+        function applyRoleBasedSidebar(role) {
+            const allNavs = [
+                'nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 
+                'nav-kelola-halaqah', 'nav-kelola-kelas', 'nav-kelola-guru', 
+                'nav-kelola-siswa', 'nav-kenaikan-kelulusan', 'nav-kelola-akun', 
+                'nav-monev-eksekutif', 'nav-ganti-password'
+            ];
+
+            // Sembunyikan semua dulu
+            allNavs.forEach(navId => {
+                const el = document.getElementById(navId);
+                if(el) el.classList.add('hidden');
+            });
+
+            // Tampilkan menu berdasarkan hak akses role
+            if (role === 'Admin') {
+                allNavs.forEach(navId => document.getElementById(navId)?.classList.remove('hidden'));
+            } else if (role === 'GuruTahfiz') {
+                ['nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+            } else if (role === 'WaliKelas') {
+                ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+            } else if (role === 'KepalaSekolah') {
+                ['nav-dashboard', 'nav-data-mutabaah', 'nav-monev-eksekutif', 'nav-ganti-password'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+            } else if (role === 'OrangTua') {
+                ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+            }
         }
 
         function handleLogout() {
