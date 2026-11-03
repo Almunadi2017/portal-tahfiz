@@ -68,10 +68,7 @@
                         <p class="text-[10px] text-slate-400">Portal Tahfiz Sekolah</p>
                     </div>
                 </div>
-                <!-- Tombol Hamburger di Sidebar -->
-                <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white focus:outline-none p-1.5 rounded-lg hover:bg-slate-700 transition">
-                    <i class="fa-solid fa-bars text-base"></i>
-                </button>
+                
             </div>
 
             <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1 text-xs">
@@ -119,21 +116,25 @@
         <!-- CONTENT AREA -->
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-100">
             <!-- TOPBAR -->
-            <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm">
-                <div class="flex items-center space-x-3">
-                    <h2 id="page-title" class="text-lg font-bold text-slate-800">Dashboard</h2>
-                    <span id="firebase-status" class="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium">Firebase Terhubung</span>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <div class="text-right">
-                        <p id="user-display-name" class="text-xs font-bold text-slate-800">ADMINISTRATOR</p>
-                        <p id="user-role" class="text-[10px] text-slate-500">Administrator</p>
-                    </div>
-                    <div class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600 border border-slate-300">
-                        <i class="fa-solid fa-user text-sm"></i>
-                    </div>
-                </div>
-            </header>
+<header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm">
+    <div class="flex items-center space-x-3">
+        <!-- Tombol Hamburger di Topbar (Selalu Terlihat) -->
+        <button onclick="toggleSidebar()" class="text-slate-600 hover:text-slate-800 focus:outline-none p-1.5 rounded-lg hover:bg-slate-100 transition mr-2">
+            <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+        <h2 id="page-title" class="text-lg font-bold text-slate-800">Dashboard</h2>
+        <span id="firebase-status" class="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium">Firebase Terhubung</span>
+    </div>
+    <div class="flex items-center space-x-3">
+        <div class="text-right">
+            <p id="user-display-name" class="text-xs font-bold text-slate-800">ADMINISTRATOR</p>
+            <p id="user-role" class="text-[10px] text-slate-500">Administrator</p>
+        </div>
+        <div class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600 border border-slate-300">
+            <i class="fa-solid fa-user text-sm"></i>
+        </div>
+    </div>
+</header>
 
             <!-- MAIN VIEWPORT -->
             <main class="flex-1 overflow-y-auto p-6 space-y-6">
@@ -1234,12 +1235,8 @@
 		window.toggleSidebar = function() {
             const sidebar = document.getElementById('sidebar');
             if (sidebar) {
-                sidebar.classList.toggle('w-64');
-                sidebar.classList.toggle('w-20');
-                const textElements = sidebar.querySelectorAll('span.font-medium, p, h2 span');
-                textElements.forEach(el => {
-                    el.classList.toggle('hidden');
-                });
+                // Menyembunyikan atau memunculkan sidebar sepenuhnya
+                sidebar.classList.toggle('hidden');
             }
         };
 	
