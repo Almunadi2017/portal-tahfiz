@@ -56,30 +56,26 @@
     </div>
 
     <!-- MAIN APP DASHBOARD -->
+    <!-- MAIN APP DASHBOARD -->
     <div id="app-container" class="hidden flex h-screen overflow-hidden">
         <!-- SIDEBAR -->
-        <!-- SIDEBAR -->
-<!-- SIDEBAR -->
-<aside id="sidebar" class="w-64 bg-slate-800 text-slate-200 flex flex-col shadow-xl transition-all duration-300">
-    <div class="p-5 border-b border-slate-700/80 flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-            <div class="w-9 h-9 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-lg">T</div>
-            <div>
-                <h2 class="font-bold text-white text-base tracking-wide">TAHFIZ<span class="text-emerald-400">.SCH</span></h2>
-                <p class="text-[10px] text-slate-400">Portal Tahfiz Sekolah</p>
+        <aside id="sidebar" class="w-64 bg-slate-800 text-slate-200 flex flex-col shadow-xl transition-all duration-300">
+            <div class="p-5 border-b border-slate-700/80 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-lg">T</div>
+                    <div>
+                        <h2 class="font-bold text-white text-base tracking-wide">TAHFIZ<span class="text-emerald-400">.SCH</span></h2>
+                        <p class="text-[10px] text-slate-400">Portal Tahfiz Sekolah</p>
+                    </div>
+                </div>
+                <!-- Tombol Hamburger di Sidebar -->
+                <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white focus:outline-none p-1.5 rounded-lg hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-bars text-base"></i>
+                </button>
             </div>
-        </div>
-        <!-- Tombol Hamburger -->
-        <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white focus:outline-none p-1.5 rounded-lg hover:bg-slate-700 transition">
-            <i class="fa-solid fa-bars text-base"></i>
-        </button>
-    </div>
 
-    <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1 text-xs">
-        <!-- Menu navigasi Anda... -->
-    </nav>
-</aside>
-			   <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="flex items-center px-4 py-2.5 font-medium rounded-lg bg-emerald-600 text-white shadow-sm">
+            <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1 text-xs">
+                <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="flex items-center px-4 py-2.5 font-medium rounded-lg bg-emerald-600 text-white shadow-sm">
                     <i class="fa-solid fa-chart-pie w-5 mr-3 text-center"></i> Dashboard
                 </a>
                 <a href="#" onclick="switchTab('input-setoran')" id="nav-input-setoran" class="flex items-center px-4 py-2.5 font-medium rounded-lg text-slate-300 hover:bg-slate-700/60 hover:text-white transition">
@@ -123,24 +119,21 @@
         <!-- CONTENT AREA -->
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-100">
             <!-- TOPBAR -->
-       <!-- TOPBAR -->
-<header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm">
-    <div class="flex items-center space-x-3">
-        
-        
-        <h2 id="page-title" class="text-lg font-bold text-slate-800">Dashboard</h2>
-        <span id="firebase-status" class="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium">Firebase Terhubung</span>
-    </div>
-    <div class="flex items-center space-x-3">
-        <div class="text-right">
-            <p id="user-display-name" class="text-xs font-bold text-slate-800">ADMINISTRATOR</p>
-            <p id="user-role" class="text-[10px] text-slate-500">Administrator</p>
-        </div>
-        <div class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600 border border-slate-300">
-            <i class="fa-solid fa-user text-sm"></i>
-        </div>
-    </div>
-</header>
+            <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm">
+                <div class="flex items-center space-x-3">
+                    <h2 id="page-title" class="text-lg font-bold text-slate-800">Dashboard</h2>
+                    <span id="firebase-status" class="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium">Firebase Terhubung</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="text-right">
+                        <p id="user-display-name" class="text-xs font-bold text-slate-800">ADMINISTRATOR</p>
+                        <p id="user-role" class="text-[10px] text-slate-500">Administrator</p>
+                    </div>
+                    <div class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600 border border-slate-300">
+                        <i class="fa-solid fa-user text-sm"></i>
+                    </div>
+                </div>
+            </header>
 
             <!-- MAIN VIEWPORT -->
             <main class="flex-1 overflow-y-auto p-6 space-y-6">
