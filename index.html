@@ -942,40 +942,52 @@
             populateStudentDropdowns(window.allStudentsData);
         }, handleFirestoreError);
 
+        window.allKelasData = [];
+
         onSnapshot(query(collection(db, "kelas")), (snap) => {
             const tbody = document.getElementById('kelas-table-body');
-            if(!tbody) return;
-            const list = [];
-            snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+            window.allKelasData = [];
+            snap.forEach(d => window.allKelasData.push({ id: d.id, ...d.data() }));
             
-            if(list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data kelas.</td></tr>';
-                return;
+            // 1. Render tabel kelas jika berada di halaman Kelola Kelas
+            if(tbody) {
+                if(window.allKelasData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data kelas.</td></tr>';
+                } else {
+                    const countMap = {};
+                    if(window.allStudentsData) {
+                        window.allStudentsData.forEach(s => {
+                            if(s.kelas) countMap[s.kelas] = (countMap[s.kelas] || 0) + 1;
+                        });
+                    }
+
+                    tbody.innerHTML = window.allKelasData.map(k => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4 font-mono font-semibold">${k.idKelas || 'KLS-' + Math.floor(100+Math.random()*900)}</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">${k.name}</td>
+                            <td class="py-3 px-4">${k.tingkat || 'Kelas 7'}</td>
+                            <td class="py-3 px-4">${k.teacher || '-'}</td>
+                            <td class="py-3 px-4">${countMap[k.name] || 0} Siswa</td>
+                            <td class="py-3 px-4 text-center space-x-2">
+                                <button onclick="deleteKelas('${k.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+            
+            // 2. Isi otomatis dropdown pilihan kelas di Modal Tambah/Edit Siswa
+            const studentClassSelect = document.getElementById('modal-student-class');
+            if(studentClassSelect) {
+                studentClassSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>' + 
+                    window.allKelasData.map(c => `<option value="${c.name}">${c.name} (Wali: ${c.teacher})</option>`).join('');
             }
 
-            const countMap = {};
-            if(window.allStudentsData) {
-                window.allStudentsData.forEach(s => {
-                    if(s.kelas) countMap[s.kelas] = (countMap[s.kelas] || 0) + 1;
-                });
-            }
-
-            tbody.innerHTML = list.map(k => `
-                <tr class="hover:bg-slate-50">
-                    <td class="py-3 px-4 font-mono font-semibold">${k.idKelas || 'KLS-' + Math.floor(100+Math.random()*900)}</td>
-                    <td class="py-3 px-4 font-bold text-slate-800">${k.name}</td>
-                    <td class="py-3 px-4">${k.tingkat || 'Kelas 7'}</td>
-                    <td class="py-3 px-4">${k.teacher || '-'}</td>
-                    <td class="py-3 px-4">${countMap[k.name] || 0} Siswa</td>
-                    <td class="py-3 px-4 text-center space-x-2">
-                        <button onclick="deleteKelas('${k.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-            
+            // 3. Isi otomatis dropdown kelas bimbingan di Modal Guru
             const linkedSelect = document.getElementById('modal-guru-linked');
             if(linkedSelect) {
-                linkedSelect.innerHTML = '<option value="ALL">Semua Kelas (ALL / Lintas Kelas)</option>' + list.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                linkedSelect.innerHTML = '<option value="ALL">Semua Kelas (ALL / Lintas Kelas)</option>' + 
+                    window.allKelasData.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
             }
         }, handleFirestoreError);
 
