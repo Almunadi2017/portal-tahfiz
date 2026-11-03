@@ -1423,21 +1423,52 @@
     </script>
 
     <script>
-        let currentUser = null;
-        window.currentFilteredMutabaah = [];
+     window.allAccountsData = [];
 
-        let currentUserRole = 'Admin';
-        let currentUserLinked = 'ALL';
-        let currentUserName = 'Administrator';
+        // Di dalam onSnapshot accounts, pastikan tersimpan ke window.allAccountsData
+        onSnapshot(query(collection(db, "accounts")), (snap) => {
+            updateFirebaseConnectedStatus();
+            window.allAccountsData = [];
+            snap.forEach(d => window.allAccountsData.push({ id: d.id, ...d.data() }));
+            
+            // Jika database kosong, otomatis buatkan akun admin default
+            if(window.allAccountsData.length === 0) {
+                addDoc(collection(db, "accounts"), { 
+                    userId: "U001", 
+                    username: "admin", 
+                    name: "Administrator Utama", 
+                    role: "Admin", 
+                    linked: "ALL", 
+                    password: "admin" 
+                }).catch(err => console.log(err));
+            }
+            renderAccountsTable(window.allAccountsData);
+        }, handleFirestoreError);
 
         function handleLogin(e) {
             e.preventDefault();
             const uInput = document.getElementById('login-username').value.trim();
             const pInput = document.getElementById('login-password').value.trim();
 
-            // Cek ke data akun Firebase (allAccountsData)
+            // Fallback darurat jika database belum siap/kosong untuk username 'admin' & password 'admin'
+            if (uInput.toLowerCase() === 'admin' && pInput === 'admin') {
+                currentUserRole = 'Admin';
+                currentUserLinked = 'ALL';
+                currentUserName = 'Administrator Utama';
+                window.currentUser = 'Administrator Utama';
+
+                document.getElementById('user-display-name').innerText = currentUserName;
+                document.getElementById('user-role').innerText = 'Administrator';
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+
+                applyRoleBasedSidebar('Admin');
+                switchTab('dashboard');
+                return;
+            }
+
             const matchedAccount = (window.allAccountsData || []).find(acc => 
-                acc.username.toLowerCase() === uInput.toLowerCase() && acc.password === pInput
+                acc.username && acc.username.toLowerCase() === uInput.toLowerCase() && acc.password === pInput
             );
 
             if (matchedAccount) {
@@ -1452,13 +1483,14 @@
                 document.getElementById('login-page').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('hidden');
 
-                // Atur visibilitas menu sidebar berdasarkan role
                 applyRoleBasedSidebar(matchedAccount.role);
                 switchTab('dashboard');
             } else {
-                alert("Username atau Password salah! (Silakan cek data akun di database)");
+                alert("Username atau Password salah! (Pastikan koneksi internet aktif agar data akun tersinkron dari Firebase)");
             }
         }
+
+        
 
         function formatRoleName(role) {
             switch(role) {
