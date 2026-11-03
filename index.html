@@ -1450,14 +1450,13 @@
             const uInput = document.getElementById('login-username').value.trim();
             const pInput = document.getElementById('login-password').value.trim();
 
-            // Fallback darurat jika database belum siap/kosong untuk username 'admin' & password 'admin'
+            // 1. Validasi Darurat / Default Admin
             if (uInput.toLowerCase() === 'admin' && pInput === 'admin') {
+                window.currentUser = 'Administrator Utama';
                 currentUserRole = 'Admin';
                 currentUserLinked = 'ALL';
-                currentUserName = 'Administrator Utama';
-                window.currentUser = 'Administrator Utama';
-
-                document.getElementById('user-display-name').innerText = currentUserName;
+                
+                document.getElementById('user-display-name').innerText = 'ADMINISTRATOR';
                 document.getElementById('user-role').innerText = 'Administrator';
                 document.getElementById('login-page').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('hidden');
@@ -1467,8 +1466,9 @@
                 return;
             }
 
+            // 2. Validasi Berdasarkan Data Akun di Firestore (window.allAccountsData)
             const matchedAccount = (window.allAccountsData || []).find(acc => 
-                acc.username && acc.username.toLowerCase() === uInput.toLowerCase() && acc.password === pInput
+                acc.username && acc.username.trim().toLowerCase() === uInput.toLowerCase() && String(acc.password) === String(pInput)
             );
 
             if (matchedAccount) {
@@ -1477,7 +1477,7 @@
                 currentUserName = matchedAccount.name;
                 window.currentUser = matchedAccount.name;
 
-                document.getElementById('user-display-name').innerText = matchedAccount.name;
+                document.getElementById('user-display-name').innerText = matchedAccount.name.toUpperCase();
                 document.getElementById('user-role').innerText = formatRoleName(matchedAccount.role);
                 
                 document.getElementById('login-page').classList.add('hidden');
@@ -1486,7 +1486,7 @@
                 applyRoleBasedSidebar(matchedAccount.role);
                 switchTab('dashboard');
             } else {
-                alert("Username atau Password salah! (Pastikan koneksi internet aktif agar data akun tersinkron dari Firebase)");
+                alert("Username atau Password salah! (Silakan gunakan admin / admin atau cek kembali data akun di database)");
             }
         }
 
