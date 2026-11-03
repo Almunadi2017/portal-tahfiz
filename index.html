@@ -805,6 +805,9 @@
             `).join('');
         };
 
+		
+		
+		
         window.renderAccountsTable = function(accounts) {
             const tbody = document.getElementById('accounts-table-body');
             if(!tbody) return;
@@ -1056,7 +1059,89 @@
                 `;
             }).join('');
         };
+		
+		window.parsedExcelRows = [];
 
+        window.handleExcelImport = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    if (rows.length === 0) {
+                        alert("File Excel kosong atau format tidak sesuai!");
+                        e.target.value = '';
+                        return;
+                    }
+
+                    window.parsedExcelRows = rows;
+                    
+                    // Tampilkan pratinjau ke modal
+                    document.getElementById('import-preview-info').innerText = `Ditemukan ${rows.length} data siswa dalam file Excel.`;
+                    const tbody = document.getElementById('import-preview-tbody');
+                    tbody.innerHTML = rows.slice(0, 5).map(r => `
+                        <tr>
+                            <td class="p-2 font-mono">${r.NIS || r.nis || '-'}</td>
+                            <td class="p-2 font-bold">${r['Nama Siswa'] || r.Nama || r.nama || '-'}</td>
+                            <td class="p-2">${r.Kelas || r.kelas || '-'}</td>
+                            <td class="p-2">${r['Nama Wali Siswa'] || r.Wali || '-'}</td>
+                        </tr>
+                    `).join('') + (rows.length > 5 ? `<tr><td colspan="4" class="p-2 text-center text-slate-400">... dan ${rows.length - 5} data lainnya.</td></tr>` : '');
+
+                    e.target.value = '';
+                    document.getElementById('import-preview-modal').classList.remove('hidden');
+                } catch (err) {
+                    alert("Gagal membaca file Excel: " + err.message);
+                    e.target.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        window.confirmAndSaveExcelImport = async function() {
+            const rows = window.parsedExcelRows;
+            if (!rows || rows.length === 0) {
+                closeModal('import-preview-modal');
+                return;
+            }
+
+            try {
+                let count = 0;
+                for (let row of rows) {
+                    const nis = String(row.NIS || row.nis || row.Nim || row.nim || '');
+                    const name = String(row['Nama Siswa'] || row.Nama || row.nama || row.Siswa || '');
+                    const kelas = String(row.Kelas || row.kelas || '');
+                    const target = String(row['Target Juz'] || row.Target || row.target || 'Juz 30');
+                    const guardian = String(row['Nama Wali Siswa'] || row['Nama Wali'] || row.Wali || row.wali || '');
+                    let phone = String(row['No. Kontak'] || row['No Kontak'] || row.Telepon || row.HP || row.Wa || row.wa || '');
+                    if (phone.startsWith('8')) phone = '0' + phone;
+
+                    if (name) {
+                        await addDoc(collection(db, "students"), {
+                            nis: nis || '-',
+                            name: name,
+                            kelas: kelas || '-',
+                            target: target || 'Juz 30',
+                            guardian: guardian || '-',
+                            phone: phone || '-'
+                        });
+                        count++;
+                    }
+                }
+                closeModal('import-preview-modal');
+                alert(`Berhasil mengimpor ${count} data siswa ke database!`);
+                window.parsedExcelRows = [];
+            } catch (err) {
+                alert("Gagal menyimpan data ke database: " + err.message);
+            }
+        };
+		
         // Modal Handlers & Actions
         window.openKelasModal = function() {
             const modal = document.getElementById('kelas-modal');
