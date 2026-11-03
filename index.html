@@ -1301,21 +1301,33 @@
                 'nav-monev-eksekutif', 'nav-ganti-password'
             ];
 
+            // Sembunyikan semua menu terlebih dahulu
             allNavs.forEach(navId => {
                 const el = document.getElementById(navId);
                 if(el) el.classList.add('hidden');
             });
 
+            // Tampilkan menu berdasarkan hak akses role masing-masing
             if (role === 'Admin') {
+                // Admin dapat melihat seluruh menu
                 allNavs.forEach(navId => document.getElementById(navId)?.classList.remove('hidden'));
             } else if (role === 'GuruTahfiz') {
-                ['nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+                // Guru Tahfiz hanya melihat Dashboard, Input Setoran, Data Mutabaah, dan Ganti Password
+                ['nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
+                    document.getElementById(id)?.classList.remove('hidden');
+                });
             } else if (role === 'WaliKelas') {
-                ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+                ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
+                    document.getElementById(id)?.classList.remove('hidden');
+                });
             } else if (role === 'KepalaSekolah') {
-                ['nav-dashboard', 'nav-data-mutabaah', 'nav-monev-eksekutif', 'nav-ganti-password'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+                ['nav-dashboard', 'nav-data-mutabaah', 'nav-monev-eksekutif', 'nav-ganti-password'].forEach(id => {
+                    document.getElementById(id)?.classList.remove('hidden');
+                });
             } else if (role === 'OrangTua') {
-                ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+                ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
+                    document.getElementById(id)?.classList.remove('hidden');
+                });
             }
         };
 
