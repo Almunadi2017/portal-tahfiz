@@ -68,7 +68,11 @@
             </div>
 
             <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1 text-xs">
-                <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="flex items-center px-4 py-2.5 font-medium rounded-lg bg-emerald-600 text-white shadow-sm">
+				<!-- SIDEBAR -->
+<aside id="sidebar" class="w-64 bg-slate-800 text-slate-200 flex flex-col shadow-xl transition-all duration-300">
+    <!-- Isi sidebar di sini... -->
+</aside>	
+			   <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="flex items-center px-4 py-2.5 font-medium rounded-lg bg-emerald-600 text-white shadow-sm">
                     <i class="fa-solid fa-chart-pie w-5 mr-3 text-center"></i> Dashboard
                 </a>
                 <a href="#" onclick="switchTab('input-setoran')" id="nav-input-setoran" class="flex items-center px-4 py-2.5 font-medium rounded-lg text-slate-300 hover:bg-slate-700/60 hover:text-white transition">
@@ -112,21 +116,26 @@
         <!-- CONTENT AREA -->
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-100">
             <!-- TOPBAR -->
-            <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm">
-                <div class="flex items-center space-x-3">
-                    <h2 id="page-title" class="text-lg font-bold text-slate-800">Dashboard</h2>
-                    <span id="firebase-status" class="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full font-medium">Menghubungkan Firebase...</span>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <div class="text-right">
-                        <p id="user-display-name" class="text-xs font-bold text-slate-800">Administrator</p>
-                        <p id="user-role" class="text-[10px] text-slate-500">Admin</p>
-                    </div>
-                    <div class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600 border border-slate-300">
-                        <i class="fa-solid fa-user text-sm"></i>
-                    </div>
-                </div>
-            </header>
+            <!-- TOPBAR -->
+<header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm">
+    <div class="flex items-center space-x-3">
+        <!-- Tombol Hamburger Menu -->
+        <button onclick="toggleSidebar()" class="text-slate-600 hover:text-slate-800 focus:outline-none p-1.5 rounded-lg hover:bg-slate-100 transition mr-1">
+            <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+        <h2 id="page-title" class="text-lg font-bold text-slate-800">Dashboard</h2>
+        <span id="firebase-status" class="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full font-medium">Menghubungkan Firebase...</span>
+    </div>
+    <div class="flex items-center space-x-3">
+        <div class="text-right">
+            <p id="user-display-name" class="text-xs font-bold text-slate-800">Administrator</p>
+            <p id="user-role" class="text-[10px] text-slate-500">Admin</p>
+        </div>
+        <div class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600 border border-slate-300">
+            <i class="fa-solid fa-user text-sm"></i>
+        </div>
+    </div>
+</header>
 
             <!-- MAIN VIEWPORT -->
             <main class="flex-1 overflow-y-auto p-6 space-y-6">
@@ -742,6 +751,16 @@
 	
     <!-- Firebase & App Script (HOISTED & CLEANED) -->
     <script type="module">
+		
+			function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                // Menyembunyikan atau menampilkan sidebar dengan mengubah kelas lebar/transform
+                sidebar.classList.toggle('-translate-x-full');
+                sidebar.classList.toggle('hidden');
+            }
+        }
+		
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
