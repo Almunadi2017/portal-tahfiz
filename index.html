@@ -59,6 +59,7 @@
     <div id="app-container" class="hidden flex h-screen overflow-hidden">
         <!-- SIDEBAR -->
         <!-- SIDEBAR -->
+<!-- SIDEBAR -->
 <aside id="sidebar" class="w-64 bg-slate-800 text-slate-200 flex flex-col shadow-xl transition-all duration-300">
     <div class="p-5 border-b border-slate-700/80 flex items-center justify-between">
         <div class="flex items-center space-x-3">
@@ -68,13 +69,16 @@
                 <p class="text-[10px] text-slate-400">Portal Tahfiz Sekolah</p>
             </div>
         </div>
-        <!-- Tombol Hamburger dipindah ke sini -->
+        <!-- Tombol Hamburger -->
         <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white focus:outline-none p-1.5 rounded-lg hover:bg-slate-700 transition">
             <i class="fa-solid fa-bars text-base"></i>
         </button>
     </div>
-    <!-- Navigasi sidebar... -->
-</aside>	
+
+    <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1 text-xs">
+        <!-- Menu navigasi Anda... -->
+    </nav>
+</aside>
 			   <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="flex items-center px-4 py-2.5 font-medium rounded-lg bg-emerald-600 text-white shadow-sm">
                     <i class="fa-solid fa-chart-pie w-5 mr-3 text-center"></i> Dashboard
                 </a>
@@ -756,11 +760,11 @@
 			function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             if (sidebar) {
-                // Mengubah lebar sidebar dari w-64 menjadi w-20 (mode ikon) atau sebaliknya
+                // Mengubah lebar sidebar dari w-64 menjadi w-20 (mode lipat) atau sebaliknya
                 sidebar.classList.toggle('w-64');
                 sidebar.classList.toggle('w-20');
                 
-                // Menyembunyikan teks menu saat dilipat (opsional agar terlihat bersih)
+                // Menyembunyikan atau menampilkan teks menu saat dilipat
                 const textElements = sidebar.querySelectorAll('span.font-medium, p, h2 span');
                 textElements.forEach(el => {
                     el.classList.toggle('hidden');
