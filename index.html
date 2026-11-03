@@ -1307,25 +1307,32 @@
                 if(el) el.classList.add('hidden');
             });
 
-            // Tampilkan menu berdasarkan hak akses role masing-masing
-            if (role === 'Admin') {
-                // Admin dapat melihat seluruh menu
+            // Normalkan string role (hapus spasi & ubah ke lowercase agar aman dicocokkan)
+            const cleanRole = role ? role.replace(/\s+/g, '').toLowerCase() : '';
+
+            if (cleanRole === 'admin') {
+                // Admin melihat semua menu
                 allNavs.forEach(navId => document.getElementById(navId)?.classList.remove('hidden'));
-            } else if (role === 'GuruTahfiz') {
+            } else if (cleanRole.includes('guru') || cleanRole === 'gurutahfiz' || cleanRole === 'gurupengujitahfiz') {
                 // Guru Tahfiz hanya melihat Dashboard, Input Setoran, Data Mutabaah, dan Ganti Password
                 ['nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
                     document.getElementById(id)?.classList.remove('hidden');
                 });
-            } else if (role === 'WaliKelas') {
+            } else if (cleanRole.includes('walikelas')) {
                 ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
                     document.getElementById(id)?.classList.remove('hidden');
                 });
-            } else if (role === 'KepalaSekolah') {
+            } else if (cleanRole.includes('kepalasekolah')) {
                 ['nav-dashboard', 'nav-data-mutabaah', 'nav-monev-eksekutif', 'nav-ganti-password'].forEach(id => {
                     document.getElementById(id)?.classList.remove('hidden');
                 });
-            } else if (role === 'OrangTua') {
+            } else if (cleanRole.includes('orangtua') || cleanRole.includes('walimurid')) {
                 ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
+                    document.getElementById(id)?.classList.remove('hidden');
+                });
+            } else {
+                // Default aman jika role tidak dikenal: hanya tampilkan dashboard & ganti password
+                ['nav-dashboard', 'nav-ganti-password'].forEach(id => {
                     document.getElementById(id)?.classList.remove('hidden');
                 });
             }
