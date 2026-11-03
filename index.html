@@ -1230,6 +1230,19 @@
     </script>
 
     <script>
+	
+		window.toggleSidebar = function() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('w-64');
+                sidebar.classList.toggle('w-20');
+                const textElements = sidebar.querySelectorAll('span.font-medium, p, h2 span');
+                textElements.forEach(el => {
+                    el.classList.toggle('hidden');
+                });
+            }
+        };
+	
         window.handleLogin = function(e) {
             e.preventDefault();
             const uInput = document.getElementById('login-username').value.trim();
@@ -1369,17 +1382,7 @@
             }
         };
 
-        window.toggleSidebar = function() {
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar) {
-                sidebar.classList.toggle('w-64');
-                sidebar.classList.toggle('w-20');
-                const textElements = sidebar.querySelectorAll('span.font-medium, p, h2 span');
-                textElements.forEach(el => {
-                    el.classList.toggle('hidden');
-                });
-            }
-        };
+       
 
         window.filterMutabaahTable = function() {
             const keyword = document.getElementById('search-mutabaah').value.toLowerCase();
