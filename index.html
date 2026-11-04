@@ -614,6 +614,56 @@
         </div>
     </div>
 
+	<!-- ATUR ANGGOTA HALAQAH MODAL -->
+    <div id="anggota-halaqah-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl space-y-4 text-xs">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                <div>
+                    <h3 id="modal-anggota-title" class="font-bold text-slate-800 text-sm">Atur Anggota Halaqah</h3>
+                    <p class="text-[11px] text-slate-500">Pilih santri yang masuk ke kelompok bimbingan ini (lintas kelas)</p>
+                </div>
+                <button onclick="closeModal('anggota-halaqah-modal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="search-santri-halaqah" oninput="filterSantriHalaqahModal()" placeholder="Cari nama atau NIS..." class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs w-48">
+                    <select id="filter-kelas-halaqah" onchange="filterSantriHalaqahModal()" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs">
+                        <option value="">Semua Kelas</option>
+                    </select>
+                </div>
+                <div id="badge-kuota-halaqah" class="px-3 py-1 bg-blue-100 text-blue-700 font-bold rounded-lg">
+                    0 / 15 Siswa
+                </div>
+            </div>
+
+            <div class="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 border-b border-slate-200 sticky top-0">
+                            <th class="p-3 w-10 text-center">Pilih</th>
+                            <th class="p-3">NIS</th>
+                            <th class="p-3">Nama Siswa</th>
+                            <th class="p-3">Kelas</th>
+                            <th class="p-3">Target</th>
+                            <th class="p-3">Status Kelompok Saat Ini</th>
+                        </tr>
+                    </thead>
+                    <tbody id="santri-halaqah-tbody" class="divide-y divide-slate-100 text-slate-700">
+                        <tr><td colspan="6" class="p-4 text-center text-slate-400">Memuat data siswa...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeModal('anggota-halaqah-modal')" class="px-4 py-2 bg-slate-200 text-slate-700 font-semibold rounded-lg">Tutup</button>
+                <button type="button" onclick="saveAnggotaHalaqah()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg"><i class="fa-solid fa-check mr-1"></i> Terapkan Anggota</button>
+            </div>
+        </div>
+    </div>
+	
+	
+	
     <!-- STUDENT MODAL -->
     <div id="student-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md space-y-4 text-xs">
@@ -907,6 +957,122 @@
             `).join('');
         };
 
+		window.currentActiveHalaqahId = null;
+
+        window.openAturAnggotaModal = function(halaqahId, halaqahName, capacity) {
+            window.currentActiveHalaqahId = halaqahId;
+            document.getElementById('modal-anggota-title').innerText = `Atur Anggota: ${halaqahName}`;
+            document.getElementById('anggota-halaqah-modal').classList.remove('hidden');
+
+            // Populate filter kelas dropdown
+            const classSelect = document.getElementById('filter-kelas-halaqah');
+            const uniqueClasses = [...new Set((window.allStudentsData || []).map(s => s.kelas))].filter(Boolean);
+            classSelect.innerHTML = '<option value="">Semua Kelas</option>' + uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            renderSantriHalaqahList();
+        };
+
+        window.renderSantriHalaqahList = function() {
+            const tbody = document.getElementById('santri-halaqah-tbody');
+            if(!tbody) return;
+
+            const searchKey = document.getElementById('search-santri-halaqah').value.toLowerCase();
+            const classKey = document.getElementById('filter-kelas-halaqah').value;
+
+            let students = window.allStudentsData || [];
+            if(searchKey) {
+                students = students.filter(s => (s.name && s.name.toLowerCase().includes(searchKey)) || (s.nis && s.nis.toLowerCase().includes(searchKey)));
+            }
+            if(classKey) {
+                students = students.filter(s => s.kelas === classKey);
+            }
+
+            if(students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">Tidak ada data siswa.</td></tr>';
+                return;
+            }
+
+            // Hitung jumlah yang terpilih
+            let selectedCount = 0;
+
+            tbody.innerHTML = students.map(s => {
+                const isSelected = s.idHalaqah === window.currentActiveHalaqahId;
+                if(isSelected) selectedCount++;
+
+                let statusBadge = '<span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-semibold">Belum Masuk Kelompok</span>';
+                if(s.idHalaqah && s.idHalaqah !== window.currentActiveHalaqahId) {
+                    const hObj = (window.allHalaqahData || []).find(h => h.id === s.idHalaqah || h.idHalaqah === s.idHalaqah);
+                    const hName = hObj ? hObj.name : 'Kelompok Lain';
+                    statusBadge = `<span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-semibold">Di ${hName}</span>`;
+                } else if(isSelected) {
+                    statusBadge = '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-semibold">Anggota Kelompok Ini</span>';
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 text-center">
+                            <input type="checkbox" value="${s.id}" ${isSelected ? 'checked' : ''} class="santri-checkbox w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500" onchange="updateKuotaHalaqahBadge()">
+                        </td>
+                        <td class="p-3 font-mono">${s.nis || '-'}</td>
+                        <td class="p-3 font-bold text-slate-800">${s.name}</td>
+                        <td class="p-3">${s.kelas || '-'}</td>
+                        <td class="p-3">${s.target || 'Juz 30'}</td>
+                        <td class="p-3">${statusBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            updateKuotaHalaqahBadge();
+        };
+
+        window.filterSantriHalaqahModal = function() {
+            renderSantriHalaqahList();
+        };
+
+        window.updateKuotaHalaqahBadge = function() {
+            const checkboxes = document.querySelectorAll('.santri-checkbox:checked');
+            const count = checkboxes.length;
+            const hObj = (window.allHalaqahData || []).find(h => h.id === window.currentActiveHalaqahId || h.idHalaqah === window.currentActiveHalaqahId);
+            const capacity = hObj ? Number(hObj.capacity) || 15 : 15;
+
+            const badge = document.getElementById('badge-kuota-halaqah');
+            if(badge) {
+                badge.innerText = `${count} / ${capacity} Siswa`;
+                if(count > capacity) {
+                    badge.className = 'px-3 py-1 bg-rose-100 text-rose-700 font-bold rounded-lg';
+                } else {
+                    badge.className = 'px-3 py-1 bg-blue-100 text-blue-700 font-bold rounded-lg';
+                }
+            }
+        };
+
+        window.saveAnggotaHalaqah = async function() {
+            const checkboxes = document.querySelectorAll('.santri-checkbox');
+            try {
+                for(let cb of checkboxes) {
+                    const studentId = cb.value;
+                    const isChecked = cb.checked;
+                    const studentDocRef = doc(db, "students", studentId);
+                    
+                    if(isChecked) {
+                        // Set idHalaqah ke siswa ini
+                        await updateDoc(studentDocRef, { idHalaqah: window.currentActiveHalaqahId });
+                    } else {
+                        // Jika tadinya kelompok ini tapi di-uncheck, kosongkan idHalaqah
+                        const studentObj = (window.allStudentsData || []).find(s => s.id === studentId);
+                        if(studentObj && studentObj.idHalaqah === window.currentActiveHalaqahId) {
+                            await updateDoc(studentDocRef, { idHalaqah: "" });
+                        }
+                    }
+                }
+                alert("Anggota halaqah berhasil diperbarui!");
+                closeModal('anggota-halaqah-modal');
+            } catch(err) {
+                alert("Gagal menyimpan anggota: " + err.message);
+            }
+        };
+		
+		
         window.renderAllTable = function(list) {
             const tbody = document.getElementById('all-mutabaah-table');
             if(!tbody) return;
@@ -1064,8 +1230,11 @@
                         <td class="py-3 px-4">${kapasitas} Siswa</td>
                         <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full font-semibold ${badgeBg}">${terisi} Siswa (${persen}%)</span></td>
                         <td class="py-3 px-4 text-center space-x-2">
-                            <button onclick="alert('Fitur atur anggota untuk kelompok ${h.name}')" class="px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded font-semibold"><i class="fa-solid fa-users-gear mr-1"></i> Atur Anggota</button>
-                            <button onclick="deleteHalaqah('${h.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                           <button onclick="openAturAnggotaModal('${h.id}', '${h.name}', '${h.capacity}')" class="px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded font-semibold">
+    <i class="fa-solid fa-users-gear mr-1"></i> Atur Anggota
+</button>
+
+						   <button onclick="deleteHalaqah('${h.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>
                 `;
