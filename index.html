@@ -688,27 +688,6 @@
                             <option value="">-- Pilih Kelas --</option>
                         </select>
                     </div>
-					window.populateStudentDropdowns = function(students) {
-            const select = document.getElementById('input-siswa');
-            if(!select) return;
-
-            let studentsList = students || window.allStudentsData || [];
-
-            // Jika login sebagai Guru Tahfiz, saring hanya siswa di kelompok halaqahnya
-            if (window.currentUserRole && window.currentUserRole !== 'Admin') {
-                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
-                    (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
-                    h.id === window.currentUserLinked
-                );
-                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
-                studentsList = studentsList.filter(s => halaqahIds.includes(s.idHalaqah));
-            }
-
-            select.innerHTML = '<option value="">-- Pilih Siswa --</option>' + 
-                studentsList.map(s => `<option value="${s.name}">${s.name} (${s.kelas || 'Tanpa Kelas'})</option>`).join('');
-        };
-					
-					
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">Target Juz</label>
                         <input type="text" id="modal-student-target" value="Juz 30" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg">
@@ -808,36 +787,7 @@
         window.currentUserName = 'Administrator';
         window.currentFilteredMutabaah = [];
         window.allAccountsData = [];
-        onSnapshot(query(collection(db, "students")), (snap) => {
-            updateFirebaseConnectedStatus();
-            window.allStudentsData = [];
-            snap.forEach(d => window.allStudentsData.push({ id: d.id, ...d.data() }));
-            
-            let activeStudents = window.allStudentsData;
-            
-            // Jika login sebagai Guru Tahfiz, filter jumlah siswa berdasarkan halaqahnya
-            if (window.currentUserRole && window.currentUserRole !== 'Admin') {
-                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
-                    (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
-                    h.id === window.currentUserLinked
-                );
-                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
-                activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
-            }
-
-            const statTotalSiswa = document.getElementById('stat-total-siswa');
-            if (statTotalSiswa) {
-                statTotalSiswa.innerText = activeStudents.length;
-            }
-            
-            renderStudentsTable(window.allStudentsData);
-            renderPromotionTable(window.allStudentsData);
-            populateStudentDropdowns(activeStudents);
-        }, handleFirestoreError);
-		
-		
-		
-		
+        window.allSetoranData = [];
         window.allStudentsData = [];
         window.allKelasData = [];
         window.allHalaqahData = [];
@@ -1149,13 +1099,31 @@
         }, handleFirestoreError);
 
         onSnapshot(query(collection(db, "students")), (snap) => {
+        onSnapshot(query(collection(db, "students")), (snap) => {
             updateFirebaseConnectedStatus();
             window.allStudentsData = [];
             snap.forEach(d => window.allStudentsData.push({ id: d.id, ...d.data() }));
-            document.getElementById('stat-total-siswa').innerText = window.allStudentsData.length;
+            
+            let activeStudents = window.allStudentsData;
+            
+            // Jika login sebagai Guru Tahfiz, filter khusus siswa di kelompok halaqahnya
+            if (window.currentUserRole && window.currentUserRole !== 'Admin') {
+                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                    (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
+                    h.id === window.currentUserLinked
+                );
+                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
+            }
+
+            const statTotalSiswa = document.getElementById('stat-total-siswa');
+            if (statTotalSiswa) {
+                statTotalSiswa.innerText = activeStudents.length;
+            }
+
             renderStudentsTable(window.allStudentsData);
             renderPromotionTable(window.allStudentsData);
-            populateStudentDropdowns(window.allStudentsData);
+            populateStudentDropdowns(activeStudents);
         }, handleFirestoreError);
 
         window.allKelasData = [];
@@ -1624,12 +1592,20 @@
 
                 applyRoleBasedSidebar('Admin');
                 switchTab('dashboard');
-                if(window.allStudentsData) renderStudentsTable(window.allStudentsData);
+                if(window.allStudentsData) {
+                    document.getElementById('stat-total-siswa').innerText = window.allStudentsData.length;
+                    renderStudentsTable(window.allStudentsData);
+                    updateDashboardStatsAndCharts(window.allSetoranData || []);
+                }
                 return;
             }
 
-            // Pastikan pencarian akun mencakup data dari database Firestore
-            const matchedAccount = (window.allAccountsData || []).find(acc => 
+            if (!window.allAccountsData || window.allAccountsData.length === 0) {
+                alert("Data akun sedang dimuat atau koneksi database belum siap. Mohon tunggu beberapa detik lalu coba lagi.");
+                return;
+            }
+
+            const matchedAccount = window.allAccountsData.find(acc => 
                 acc.username && acc.username.trim().toLowerCase() === uInput && String(acc.password).trim() === pInput
             );
 
@@ -1648,9 +1624,18 @@
                 window.applyRoleBasedSidebar(matchedAccount.role);
                 switchTab('dashboard');
 
-                // Render ulang tabel siswa/dashboard sesuai hak akses role
+                // Hitung ulang statistik dasbor setelah login
                 if(window.allStudentsData) {
-                    renderStudentsTable(window.allStudentsData);
+                    let activeStudents = window.allStudentsData;
+                    if (window.currentUserRole !== 'Admin') {
+                        const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                            (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
+                            h.id === window.currentUserLinked
+                        );
+                        const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                        activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
+                    }
+                    document.getElementById('stat-total-siswa').innerText = activeStudents.length;
                     updateDashboardStatsAndCharts(window.allSetoranData || []);
                 }
             } else {
