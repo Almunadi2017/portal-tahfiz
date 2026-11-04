@@ -1595,19 +1595,22 @@
                 if(window.allStudentsData) {
                     document.getElementById('stat-total-siswa').innerText = window.allStudentsData.length;
                     renderStudentsTable(window.allStudentsData);
-                    updateDashboardStatsAndCharts(window.allSetoranData || []);
                 }
                 return;
             }
 
+            // Pastikan data akun dari database sudah termuat
             if (!window.allAccountsData || window.allAccountsData.length === 0) {
-                alert("Data akun sedang dimuat atau koneksi database belum siap. Mohon tunggu beberapa detik lalu coba lagi.");
+                alert("Data akun dari database sedang dimuat atau koneksi terhalang. Mohon tunggu 3 detik lalu coba klik Login kembali.");
                 return;
             }
 
-            const matchedAccount = window.allAccountsData.find(acc => 
-                acc.username && acc.username.trim().toLowerCase() === uInput && String(acc.password).trim() === pInput
-            );
+            // Pencarian akun yang toleran terhadap spasi dan huruf besar/kecil
+            const matchedAccount = window.allAccountsData.find(acc => {
+                const dbUser = acc.username ? String(acc.username).trim().toLowerCase() : '';
+                const dbPass = acc.password ? String(acc.password).trim() : '';
+                return dbUser === uInput && dbPass === pInput;
+            });
 
             if (matchedAccount) {
                 window.currentUserRole = matchedAccount.role;
@@ -1624,7 +1627,7 @@
                 window.applyRoleBasedSidebar(matchedAccount.role);
                 switchTab('dashboard');
 
-                // Hitung ulang statistik dasbor setelah login
+                // Hitung ulang total siswa khusus untuk Guru Tahfiz di dasbor
                 if(window.allStudentsData) {
                     let activeStudents = window.allStudentsData;
                     if (window.currentUserRole !== 'Admin') {
@@ -1635,11 +1638,12 @@
                         const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
                         activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
                     }
-                    document.getElementById('stat-total-siswa').innerText = activeStudents.length;
+                    const statTotalSiswa = document.getElementById('stat-total-siswa');
+                    if(statTotalSiswa) statTotalSiswa.innerText = activeStudents.length;
                     updateDashboardStatsAndCharts(window.allSetoranData || []);
                 }
             } else {
-                alert("Username atau Password salah!");
+                alert("Username atau Password salah! Periksa kembali data login akun guru tersebut.");
             }
         };
 
