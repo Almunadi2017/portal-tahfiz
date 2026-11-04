@@ -1591,8 +1591,8 @@
                 document.getElementById('login-page').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('hidden');
 
-                // Panggil fungsi role sidebar dengan data role akun
-                applyRoleBasedSidebar(matchedAccount.role);
+                // Eksekusi pembersihan menu sidebar sesuai role akun
+                window.applyRoleBasedSidebar(matchedAccount.role);
                 switchTab('dashboard');
             } else {
                 alert("Username atau Password salah!");
@@ -1607,43 +1607,42 @@
                 'nav-monev-eksekutif', 'nav-ganti-password'
             ];
 
-            // Sembunyikan seluruh menu terlebih dahulu
+            // Sembunyikan seluruh menu terlebih dahulu menggunakan inline style display none agar langsung bereaksi
             allNavs.forEach(navId => {
                 const el = document.getElementById(navId);
-                if(el) el.classList.add('hidden');
+                if(el) {
+                    el.classList.add('hidden');
+                    el.style.display = 'none';
+                }
             });
 
-            // Normalisasi string role ke huruf kecil
             const r = role ? role.toLowerCase().trim() : '';
 
+            // Tentukan menu apa saja yang boleh muncul
+            let allowedNavs = [];
             if (r === 'admin' || r.includes('administrator')) {
-                // Admin menampilkan semua menu master
-                allNavs.forEach(navId => document.getElementById(navId)?.classList.remove('hidden'));
+                allowedNavs = allNavs; // Admin lihat semua
             } else if (r.includes('guru') || r.includes('tahfiz') || r.includes('penguji')) {
-                // Guru Tahfiz / Guru Penguji hanya menampilkan menu esensial
-                ['nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
-                    document.getElementById(id)?.classList.remove('hidden');
-                });
+                allowedNavs = ['nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 'nav-ganti-password'];
             } else if (r.includes('walikelas') || r.includes('wali kelas')) {
-                ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
-                    document.getElementById(id)?.classList.remove('hidden');
-                });
+                allowedNavs = ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'];
             } else if (r.includes('kepalasekolah') || r.includes('kepala sekolah')) {
-                ['nav-dashboard', 'nav-data-mutabaah', 'nav-monev-eksekutif', 'nav-ganti-password'].forEach(id => {
-                    document.getElementById(id)?.classList.remove('hidden');
-                });
+                allowedNavs = ['nav-dashboard', 'nav-data-mutabaah', 'nav-monev-eksekutif', 'nav-ganti-password'];
             } else if (r.includes('orangtua') || r.includes('walimurid')) {
-                ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
-                    document.getElementById(id)?.classList.remove('hidden');
-                });
+                allowedNavs = ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'];
             } else {
-                // Default fallback
-                ['nav-dashboard', 'nav-ganti-password'].forEach(id => {
-                    document.getElementById(id)?.classList.remove('hidden');
-                });
+                allowedNavs = ['nav-dashboard', 'nav-ganti-password'];
             }
-        };
 
+            // Tampilkan hanya menu yang diizinkan
+            allowedNavs.forEach(navId => {
+                const el = document.getElementById(navId);
+                if(el) {
+                    el.classList.remove('hidden');
+                    el.style.display = 'flex';
+                }
+            });
+        };
         window.formatRoleName = function(role) {
             switch(role) {
                 case 'Admin': return 'Administrator';
