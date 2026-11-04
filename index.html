@@ -1623,31 +1623,32 @@
                 if(el) el.classList.add('hidden');
             });
 
-            // Normalkan string role (hapus spasi & ubah ke lowercase agar aman dicocokkan)
-            const cleanRole = role ? role.replace(/\s+/g, '').toLowerCase() : '';
+            // Ubah role ke lowercase untuk pencocokan yang akurat
+            const r = role ? role.toLowerCase().trim() : '';
 
-            if (cleanRole === 'admin') {
-                // Admin melihat semua menu
+            // Periksa hak akses berdasarkan kata kunci pada role
+            if (r === 'admin' || r.includes('administrator')) {
+                // Admin dapat melihat seluruh menu
                 allNavs.forEach(navId => document.getElementById(navId)?.classList.remove('hidden'));
-            } else if (cleanRole.includes('guru') || cleanRole === 'gurutahfiz' || cleanRole === 'gurupengujitahfiz') {
-                // Guru Tahfiz hanya melihat Dashboard, Input Setoran, Data Mutabaah, dan Ganti Password
+            } else if (r.includes('guru') || r.includes('tahfiz') || r.includes('penguji')) {
+                // Guru Tahfiz / Guru Penguji hanya melihat Dashboard, Input Setoran, Data Mutabaah, dan Ganti Password
                 ['nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
                     document.getElementById(id)?.classList.remove('hidden');
                 });
-            } else if (cleanRole.includes('walikelas')) {
+            } else if (r.includes('walikelas') || r.includes('wali kelas')) {
                 ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
                     document.getElementById(id)?.classList.remove('hidden');
                 });
-            } else if (cleanRole.includes('kepalasekolah')) {
+            } else if (r.includes('kepalasekolah') || r.includes('kepala sekolah')) {
                 ['nav-dashboard', 'nav-data-mutabaah', 'nav-monev-eksekutif', 'nav-ganti-password'].forEach(id => {
                     document.getElementById(id)?.classList.remove('hidden');
                 });
-            } else if (cleanRole.includes('orangtua') || cleanRole.includes('walimurid')) {
+            } else if (r.includes('orangtua') || r.includes('walimurid') || r.includes('ortu')) {
                 ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
                     document.getElementById(id)?.classList.remove('hidden');
                 });
             } else {
-                // Default aman jika role tidak dikenal: hanya tampilkan dashboard & ganti password
+                // Default aman: hanya Dashboard & Ganti Password
                 ['nav-dashboard', 'nav-ganti-password'].forEach(id => {
                     document.getElementById(id)?.classList.remove('hidden');
                 });
