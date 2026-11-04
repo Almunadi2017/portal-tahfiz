@@ -1591,10 +1591,56 @@
                 document.getElementById('login-page').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('hidden');
 
+                // Panggil fungsi role sidebar dengan data role akun
                 applyRoleBasedSidebar(matchedAccount.role);
                 switchTab('dashboard');
             } else {
-                alert("Username atau Password salah! (Silakan gunakan admin / admin atau cek kembali data akun di database)");
+                alert("Username atau Password salah!");
+            }
+        };
+
+        window.applyRoleBasedSidebar = function(role) {
+            const allNavs = [
+                'nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 
+                'nav-kelola-halaqah', 'nav-kelola-kelas', 'nav-kelola-guru', 
+                'nav-kelola-siswa', 'nav-kenaikan-kelulusan', 'nav-kelola-akun', 
+                'nav-monev-eksekutif', 'nav-ganti-password'
+            ];
+
+            // Sembunyikan seluruh menu terlebih dahulu
+            allNavs.forEach(navId => {
+                const el = document.getElementById(navId);
+                if(el) el.classList.add('hidden');
+            });
+
+            // Normalisasi string role ke huruf kecil
+            const r = role ? role.toLowerCase().trim() : '';
+
+            if (r === 'admin' || r.includes('administrator')) {
+                // Admin menampilkan semua menu master
+                allNavs.forEach(navId => document.getElementById(navId)?.classList.remove('hidden'));
+            } else if (r.includes('guru') || r.includes('tahfiz') || r.includes('penguji')) {
+                // Guru Tahfiz / Guru Penguji hanya menampilkan menu esensial
+                ['nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
+                    document.getElementById(id)?.classList.remove('hidden');
+                });
+            } else if (r.includes('walikelas') || r.includes('wali kelas')) {
+                ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
+                    document.getElementById(id)?.classList.remove('hidden');
+                });
+            } else if (r.includes('kepalasekolah') || r.includes('kepala sekolah')) {
+                ['nav-dashboard', 'nav-data-mutabaah', 'nav-monev-eksekutif', 'nav-ganti-password'].forEach(id => {
+                    document.getElementById(id)?.classList.remove('hidden');
+                });
+            } else if (r.includes('orangtua') || r.includes('walimurid')) {
+                ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
+                    document.getElementById(id)?.classList.remove('hidden');
+                });
+            } else {
+                // Default fallback
+                ['nav-dashboard', 'nav-ganti-password'].forEach(id => {
+                    document.getElementById(id)?.classList.remove('hidden');
+                });
             }
         };
 
@@ -1609,51 +1655,7 @@
             }
         };
 
-        window.applyRoleBasedSidebar = function(role) {
-            const allNavs = [
-                'nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 
-                'nav-kelola-halaqah', 'nav-kelola-kelas', 'nav-kelola-guru', 
-                'nav-kelola-siswa', 'nav-kenaikan-kelulusan', 'nav-kelola-akun', 
-                'nav-monev-eksekutif', 'nav-ganti-password'
-            ];
-
-            // Sembunyikan semua menu terlebih dahulu
-            allNavs.forEach(navId => {
-                const el = document.getElementById(navId);
-                if(el) el.classList.add('hidden');
-            });
-
-            // Ubah role ke lowercase untuk pencocokan yang akurat
-            const r = role ? role.toLowerCase().trim() : '';
-
-            // Periksa hak akses berdasarkan kata kunci pada role
-            if (r === 'admin' || r.includes('administrator')) {
-                // Admin dapat melihat seluruh menu
-                allNavs.forEach(navId => document.getElementById(navId)?.classList.remove('hidden'));
-            } else if (r.includes('guru') || r.includes('tahfiz') || r.includes('penguji')) {
-                // Guru Tahfiz / Guru Penguji hanya melihat Dashboard, Input Setoran, Data Mutabaah, dan Ganti Password
-                ['nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
-                    document.getElementById(id)?.classList.remove('hidden');
-                });
-            } else if (r.includes('walikelas') || r.includes('wali kelas')) {
-                ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
-                    document.getElementById(id)?.classList.remove('hidden');
-                });
-            } else if (r.includes('kepalasekolah') || r.includes('kepala sekolah')) {
-                ['nav-dashboard', 'nav-data-mutabaah', 'nav-monev-eksekutif', 'nav-ganti-password'].forEach(id => {
-                    document.getElementById(id)?.classList.remove('hidden');
-                });
-            } else if (r.includes('orangtua') || r.includes('walimurid') || r.includes('ortu')) {
-                ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'].forEach(id => {
-                    document.getElementById(id)?.classList.remove('hidden');
-                });
-            } else {
-                // Default aman: hanya Dashboard & Ganti Password
-                ['nav-dashboard', 'nav-ganti-password'].forEach(id => {
-                    document.getElementById(id)?.classList.remove('hidden');
-                });
-            }
-        };
+        
 
         window.handleLogout = function() {
             document.getElementById('app-container').classList.add('hidden');
