@@ -813,8 +813,9 @@
             window.allStudentsData = [];
             snap.forEach(d => window.allStudentsData.push({ id: d.id, ...d.data() }));
             
-            // Filter jumlah siswa berdasarkan role akun yang login
             let activeStudents = window.allStudentsData;
+            
+            // Jika yang login adalah Guru Tahfiz, filter khusus siswanya
             if (window.currentUserRole && window.currentUserRole !== 'Admin') {
                 const guruHalaqah = (window.allHalaqahData || []).filter(h => 
                     (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
@@ -824,10 +825,14 @@
                 activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
             }
 
-            document.getElementById('stat-total-siswa').innerText = activeStudents.length;
+            const statTotalSiswa = document.getElementById('stat-total-siswa');
+            if (statTotalSiswa) {
+                statTotalSiswa.innerText = activeStudents.length;
+            }
+            
             renderStudentsTable(window.allStudentsData);
             renderPromotionTable(window.allStudentsData);
-            populateStudentDropdowns(activeStudents); // Memanggil dropdown yang sudah difilter
+            populateStudentDropdowns(activeStudents);
         }, handleFirestoreError);
 		
 		
@@ -1610,6 +1615,7 @@
                 window.currentUser = 'Administrator Utama';
                 window.currentUserRole = 'Admin';
                 window.currentUserLinked = 'ALL';
+                window.currentUserName = 'Administrator';
                 
                 document.getElementById('user-display-name').innerText = 'ADMINISTRATOR';
                 document.getElementById('user-role').innerText = 'Administrator';
@@ -1621,14 +1627,16 @@
                 return;
             }
 
+            // Pencarian akun yang lebih fleksibel (cocok dengan username/email dan password)
             const matchedAccount = (window.allAccountsData || []).find(acc => 
-                acc.username && acc.username.trim().toLowerCase() === uInput.toLowerCase() && String(acc.password) === String(pInput)
+                acc.username && acc.username.trim().toLowerCase() === uInput.toLowerCase() && String(acc.password).trim() === String(pInput).trim()
             );
 
             if (matchedAccount) {
                 window.currentUserRole = matchedAccount.role;
                 window.currentUserLinked = matchedAccount.linked || 'ALL';
                 window.currentUser = matchedAccount.name;
+                window.currentUserName = matchedAccount.name;
 
                 document.getElementById('user-display-name').innerText = matchedAccount.name.toUpperCase();
                 document.getElementById('user-role').innerText = formatRoleName(matchedAccount.role);
@@ -1636,9 +1644,13 @@
                 document.getElementById('login-page').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('hidden');
 
-                // Eksekusi pembersihan menu sidebar sesuai role akun
                 window.applyRoleBasedSidebar(matchedAccount.role);
                 switchTab('dashboard');
+                
+                // Refresh data statistik setelah login agar sesuai role
+                if (window.allStudentsData) {
+                    renderStudentsTable(window.allStudentsData);
+                }
             } else {
                 alert("Username atau Password salah!");
             }
