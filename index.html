@@ -815,7 +815,7 @@
             
             let activeStudents = window.allStudentsData;
             
-            // Jika yang login adalah Guru Tahfiz, filter khusus siswanya
+            // Jika login sebagai Guru Tahfiz, filter jumlah siswa berdasarkan halaqahnya
             if (window.currentUserRole && window.currentUserRole !== 'Admin') {
                 const guruHalaqah = (window.allHalaqahData || []).filter(h => 
                     (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
@@ -1608,10 +1608,10 @@
 	
         window.handleLogin = function(e) {
             e.preventDefault();
-            const uInput = document.getElementById('login-username').value.trim();
+            const uInput = document.getElementById('login-username').value.trim().toLowerCase();
             const pInput = document.getElementById('login-password').value.trim();
 
-            if (uInput.toLowerCase() === 'admin' && pInput === 'admin') {
+            if (uInput === 'admin' && pInput === 'admin') {
                 window.currentUser = 'Administrator Utama';
                 window.currentUserRole = 'Admin';
                 window.currentUserLinked = 'ALL';
@@ -1624,12 +1624,13 @@
 
                 applyRoleBasedSidebar('Admin');
                 switchTab('dashboard');
+                if(window.allStudentsData) renderStudentsTable(window.allStudentsData);
                 return;
             }
 
-            // Pencarian akun yang lebih fleksibel (cocok dengan username/email dan password)
+            // Pastikan pencarian akun mencakup data dari database Firestore
             const matchedAccount = (window.allAccountsData || []).find(acc => 
-                acc.username && acc.username.trim().toLowerCase() === uInput.toLowerCase() && String(acc.password).trim() === String(pInput).trim()
+                acc.username && acc.username.trim().toLowerCase() === uInput && String(acc.password).trim() === pInput
             );
 
             if (matchedAccount) {
@@ -1646,10 +1647,11 @@
 
                 window.applyRoleBasedSidebar(matchedAccount.role);
                 switchTab('dashboard');
-                
-                // Refresh data statistik setelah login agar sesuai role
-                if (window.allStudentsData) {
+
+                // Render ulang tabel siswa/dashboard sesuai hak akses role
+                if(window.allStudentsData) {
                     renderStudentsTable(window.allStudentsData);
+                    updateDashboardStatsAndCharts(window.allSetoranData || []);
                 }
             } else {
                 alert("Username atau Password salah!");
