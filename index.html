@@ -1736,7 +1736,71 @@
             }
         };
 		
-		
+		// 1. Fungsi render tabel Data Mutabaah dengan filter Role yang akurat
+        window.renderAllTable = function(list) {
+            const tbody = document.getElementById('all-mutabaah-table');
+            if(!tbody) return;
+
+            let displayList = list || window.allSetoranData || [];
+
+            // Jika yang login adalah Guru Tahfiz, filter hanya setoran siswa di kelompok halaqahnya
+            if (window.currentUserRole && window.currentUserRole !== 'Admin') {
+                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                    (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
+                    h.id === window.currentUserLinked
+                );
+                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                const santriDiHalaqah = (window.allStudentsData || []).filter(s => halaqahIds.includes(s.idHalaqah)).map(s => s.name);
+                
+                displayList = displayList.filter(item => santriDiHalaqah.includes(item.siswa));
+            }
+
+            if (displayList.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data mutabaah untuk kelompok Anda.</td></tr>'; 
+                return; 
+            }
+
+            tbody.innerHTML = displayList.map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 text-slate-500">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
+                    <td class="py-3 px-4 font-bold text-slate-800">${item.siswa || '-'}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${item.jenis || 'Ziyadah'}</span></td>
+                    <td class="py-3 px-4">${item.surah || '-'} (Ayat ${item.ayatMulai || 1}-${item.ayatSelesai || 1})</td>
+                    <td class="py-3 px-4">Juz ${item.juz || '-'}</td>
+                    <td class="py-3 px-4 font-semibold text-emerald-600">${item.kualitas || '-'}</td>
+                    <td class="py-3 px-4 text-slate-500">${item.penguji || '-'}</td>
+                </tr>
+            `).join('');
+        };
+
+        // 2. Perbarui Fungsi Apply Filters
+        window.applyFilters = function() {
+            let filtered = [...(window.allSetoranData || [])];
+            const periode = document.getElementById('filter-periode')?.value || 'semua';
+            const startDate = document.getElementById('filter-start-date')?.value;
+            const endDate = document.getElementById('filter-end-date')?.value;
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            if (periode === 'hari-ini') filtered = filtered.filter(item => item.timestamp && item.timestamp.startsWith(todayStr));
+            else if (periode === 'bulan-ini') {
+                const currentMonth = todayStr.substring(0, 7);
+                filtered = filtered.filter(item => item.timestamp && item.timestamp.startsWith(currentMonth));
+            }
+            if (startDate) filtered = filtered.filter(item => item.timestamp && item.timestamp.split('T')[0] >= startDate);
+            if (endDate) filtered = filtered.filter(item => item.timestamp && item.timestamp.split('T')[0] <= endDate);
+
+            window.currentFilteredMutabaah = filtered;
+            updateDashboardStatsAndCharts(filtered);
+            renderAllTable(filtered);
+        };
+
+        // 3. Listener Firestore untuk koleksi 'setoran'
+        onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap) => {
+            updateFirebaseConnectedStatus();
+            window.allSetoranData = [];
+            snap.forEach(d => window.allSetoranData.push({ id: d.id, ...d.data() }));
+            applyFilters();
+        }, handleFirestoreError);
 		
     </script>
 	
