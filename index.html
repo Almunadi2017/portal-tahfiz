@@ -241,8 +241,8 @@
                                 <div>
     <label class="block font-semibold text-slate-700 mb-1">Pilih Surah</label>
     <select id="input-surah" required onchange="handleSurahChange()" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg">
-        <option value="">-- Pilih Surah --</option>
-    </select>
+    <option value="">-- Pilih Surah --</option>
+</select>
 </div>
                                 <div><label class="block font-semibold text-slate-700 mb-1">Nomor Juz</label><input type="number" id="input-juz" min="1" max="30" required placeholder="Contoh: 30" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg"></div>
                             </div>
@@ -1654,6 +1654,35 @@
         document.addEventListener('DOMContentLoaded', () => {
             window.initSurahDropdown();
         });
+		
+		
+		
+		// Fungsi otomatis terpicu saat surah dipilih
+        window.handleSurahChange = function() {
+            const surahSelect = document.getElementById('input-surah');
+            const juzInput = document.getElementById('input-juz');
+            const ayatSelesaiInput = document.getElementById('input-ayat-selesai');
+            
+            const selectedOption = surahSelect.options[surahSelect.selectedIndex];
+            
+            if (selectedOption && selectedOption.value) {
+                const juz = selectedOption.getAttribute('data-juz');
+                const maxAyat = selectedOption.getAttribute('data-max');
+
+                // Otomatis isi kolom Juz dan batasi maksimal ayat
+                if (juzInput) juzInput.value = juz;
+                if (ayatSelesaiInput) {
+                    ayatSelesaiInput.max = maxAyat;
+                    ayatSelesaiInput.placeholder = `Maks: ${maxAyat} Ayat`;
+                }
+            } else {
+                if (juzInput) juzInput.value = '';
+                if (ayatSelesaiInput) {
+                    ayatSelesaiInput.value = '';
+                    ayatSelesaiInput.placeholder = 'Contoh: 10';
+                }
+            }
+        };
 		
 		
     </script>
