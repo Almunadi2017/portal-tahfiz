@@ -881,7 +881,7 @@
             }
 
             try {
-                // Ambil data akun langsung dari koleksi 'accounts' di Firestore
+                // Mengambil data akun langsung dari database Firestore
                 const q = query(collection(db, "accounts"));
                 const querySnapshot = await getDocs(q);
                 
@@ -910,7 +910,6 @@
                     window.applyRoleBasedSidebar(matchedAccount.role);
                     switchTab('dashboard');
 
-                    // Hitung jumlah siswa di dasbor sesuai bimbingan guru
                     if(window.allStudentsData) {
                         let activeStudents = window.allStudentsData;
                         if (window.currentUserRole !== 'Admin') {
@@ -926,10 +925,10 @@
                         updateDashboardStatsAndCharts(window.allSetoranData || []);
                     }
                 } else {
-                    alert("Username atau Password salah! Pastikan data akun sudah terdaftar di menu Kelola Akun.");
+                    alert("Username atau Password salah!");
                 }
             } catch (err) {
-                alert("Gagal melakukan verifikasi login ke database: " + err.message);
+                alert("Gagal memverifikasi login: " + err.message);
             }
         };
 		
