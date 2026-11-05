@@ -59,7 +59,7 @@
     <!-- MAIN APP DASHBOARD -->
     <div id="app-container" class="hidden flex h-screen overflow-hidden">
         <!-- SIDEBAR -->
-       <aside id="sidebar" class="w-64 bg-slate-800 text-slate-200 flex flex-col shadow-xl transition-all duration-800 ease-in-out transform overflow-hidden">
+      <aside id="sidebar" class="w-64 bg-slate-800 text-slate-200 flex flex-col shadow-xl transition-all duration-500 ease-in-out overflow-hidden">
             <div class="p-5 border-b border-slate-700/80 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                     <div class="w-9 h-9 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-lg">T</div>
@@ -834,8 +834,18 @@
 		window.toggleSidebar = function() {
             const sidebar = document.getElementById('sidebar');
             if (sidebar) {
-                // Menyembunyikan atau memunculkan sidebar sepenuhnya
-                sidebar.classList.toggle('hidden');
+                // Cek apakah sidebar sedang terbuka (lebar 64 / 256px) atau tertutup (lebar 0)
+                if (sidebar.style.width === '0px' || sidebar.classList.contains('sidebar-closed')) {
+                    sidebar.style.width = '16rem'; // Mengembalikan ke lebar semula (w-64 / 256px)
+                    sidebar.classList.remove('sidebar-closed');
+                    sidebar.style.opacity = '1';
+                    sidebar.style.visibility = 'visible';
+                } else {
+                    sidebar.style.width = '0px'; // Melipat perlahan ke 0
+                    sidebar.classList.add('sidebar-closed');
+                    sidebar.style.opacity = '0';
+                    sidebar.style.visibility = 'hidden';
+                }
             }
         };
 	
