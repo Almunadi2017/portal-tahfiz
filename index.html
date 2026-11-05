@@ -1372,7 +1372,7 @@
             }).join('');
         };
 
-        // Firestore Listeners
+       // Firestore Listeners Lengkap
         onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap) => {
             updateFirebaseConnectedStatus();
             window.allSetoranData = [];
@@ -1403,20 +1403,88 @@
             populateStudentDropdowns(activeStudents);
         }, handleFirestoreError);
 
+        // 1. LISTENER KELOLA KELAS
         onSnapshot(query(collection(db, "kelas")), (snap) => {
+            updateFirebaseConnectedStatus();
+            const tbody = document.getElementById('kelas-table-body');
             window.allKelasData = [];
             snap.forEach(d => window.allKelasData.push({ id: d.id, ...d.data() }));
+            
+            if(tbody) {
+                if(window.allKelasData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data kelas.</td></tr>';
+                } else {
+                    const countMap = {};
+                    if(window.allStudentsData) {
+                        window.allStudentsData.forEach(s => {
+                            if(s.kelas) countMap[s.kelas] = (countMap[s.kelas] || 0) + 1;
+                        });
+                    }
+
+                    tbody.innerHTML = window.allKelasData.map(k => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4 font-mono font-semibold">${k.idKelas || 'KLS-' + Math.floor(100+Math.random()*900)}</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">${k.name}</td>
+                            <td class="py-3 px-4">${k.tingkat || 'Kelas 7'}</td>
+                            <td class="py-3 px-4">${k.teacher || '-'}</td>
+                            <td class="py-3 px-4">${countMap[k.name] || 0} Siswa</td>
+                            <td class="py-3 px-4 text-center space-x-2">
+                                <button onclick="deleteKelas('${k.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+            
             const studentClassSelect = document.getElementById('modal-student-class');
             if(studentClassSelect) {
                 studentClassSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>' + 
                     window.allKelasData.map(c => `<option value="${c.name}">${c.name} (Wali: ${c.teacher})</option>`).join('');
             }
+
+            const linkedSelect = document.getElementById('modal-guru-linked');
+            if(linkedSelect) {
+                linkedSelect.innerHTML = '<option value="ALL">Semua Kelas (ALL / Lintas Kelas)</option>' + 
+                    window.allKelasData.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            }
         }, handleFirestoreError);
 
+        // 2. LISTENER KELOLA GURU & AKUN
         onSnapshot(query(collection(db, "accounts")), (snap) => {
+            updateFirebaseConnectedStatus();
             window.allAccountsData = [];
             snap.forEach(d => window.allAccountsData.push({ id: d.id, ...d.data() }));
+            if(window.allAccountsData.length === 0) {
+                addDoc(collection(db, "accounts"), { userId: "U001", username: "admin", name: "Administrator Utama", role: "Admin", linked: "ALL", password: "admin" }).catch(err => console.log(err));
+            }
             renderAccountsTable(window.allAccountsData);
+            
+            const tbody = document.getElementById('guru-table-body');
+            if(tbody) {
+                const gurus = window.allAccountsData.filter(acc => acc.role === 'GuruTahfiz' || acc.role === 'Admin');
+                if(gurus.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data guru penguji.</td></tr>';
+                } else {
+                    tbody.innerHTML = gurus.map(g => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4 font-mono font-semibold">${g.userId || 'G' + Math.floor(1000+Math.random()*9000)}</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">${g.name}</td>
+                            <td class="py-3 px-4 font-mono">${g.username}</td>
+                            <td class="py-3 px-4 font-mono">********</td>
+                            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-semibold">${g.linked || 'ALL'}</span></td>
+                            <td class="py-3 px-4 text-center space-x-2">
+                                <button onclick="deleteGuru('${g.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            const selectTeacher = document.getElementById('modal-halaqah-teacher');
+            if(selectTeacher) {
+                const teachers = window.allAccountsData.filter(acc => acc.role === 'GuruTahfiz' || acc.role === 'Admin');
+                selectTeacher.innerHTML = '<option value="">-- Pilih Guru --</option>' + teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+            }
         }, handleFirestoreError);
 
         onSnapshot(query(collection(db, "halaqah")), (snap) => {
@@ -1424,32 +1492,6 @@
             snap.forEach(d => window.allHalaqahData.push({ id: d.id, ...d.data() }));
             renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
         }, handleFirestoreError);
-
-        let juzChartInstance = null;
-        let typeChartInstance = null;
-        window.updateCharts = function(juzCounts, ziyadah, murajaah) {
-            const ctxJuz = document.getElementById('juzChart').getContext('2d');
-            if(juzChartInstance) juzChartInstance.destroy();
-            juzChartInstance = new Chart(ctxJuz, {
-                type: 'bar',
-                data: {
-                    labels: ['Juz 1', 'Juz 29', 'Juz 30'],
-                    datasets: [{ label: 'Capaian Siswa', data: [juzCounts['1'] || 0, juzCounts['29'] || 0, juzCounts['30'] || 0], backgroundColor: '#1e293b', borderRadius: 6 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-
-            const ctxType = document.getElementById('typeChart').getContext('2d');
-            if(typeChartInstance) typeChartInstance.destroy();
-            typeChartInstance = new Chart(ctxType, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Ziyadah', 'Murajaah'],
-                    datasets: [{ data: [ziyadah, murajaah], backgroundColor: ['#0ea5e9', '#10b981'] }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        };
     </script>
 	
 	
