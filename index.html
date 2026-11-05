@@ -855,7 +855,83 @@
             `).join('');
         };
 
-		
+		window.handleLogin = async function(e) {
+            e.preventDefault();
+            const uInput = document.getElementById('login-username').value.trim().toLowerCase();
+            const pInput = document.getElementById('login-password').value.trim();
+
+            if (uInput === 'admin' && pInput === 'admin') {
+                window.currentUser = 'Administrator Utama';
+                window.currentUserRole = 'Admin';
+                window.currentUserLinked = 'ALL';
+                window.currentUserName = 'Administrator';
+                
+                document.getElementById('user-display-name').innerText = 'ADMINISTRATOR';
+                document.getElementById('user-role').innerText = 'Administrator';
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+
+                applyRoleBasedSidebar('Admin');
+                switchTab('dashboard');
+                if(window.allStudentsData) {
+                    document.getElementById('stat-total-siswa').innerText = window.allStudentsData.length;
+                    renderStudentsTable(window.allStudentsData);
+                }
+                return;
+            }
+
+            try {
+                // Ambil data akun langsung dari koleksi 'accounts' di Firestore
+                const q = query(collection(db, "accounts"));
+                const querySnapshot = await getDocs(q);
+                
+                let matchedAccount = null;
+                querySnapshot.forEach((docSnap) => {
+                    const acc = docSnap.data();
+                    const dbUser = acc.username ? String(acc.username).trim().toLowerCase() : '';
+                    const dbPass = acc.password ? String(acc.password).trim() : '';
+                    if (dbUser === uInput && dbPass === pInput) {
+                        matchedAccount = { id: docSnap.id, ...acc };
+                    }
+                });
+
+                if (matchedAccount) {
+                    window.currentUserRole = matchedAccount.role;
+                    window.currentUserLinked = matchedAccount.linked || 'ALL';
+                    window.currentUser = matchedAccount.name;
+                    window.currentUserName = matchedAccount.name;
+
+                    document.getElementById('user-display-name').innerText = matchedAccount.name.toUpperCase();
+                    document.getElementById('user-role').innerText = formatRoleName(matchedAccount.role);
+                    
+                    document.getElementById('login-page').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('hidden');
+
+                    window.applyRoleBasedSidebar(matchedAccount.role);
+                    switchTab('dashboard');
+
+                    // Hitung jumlah siswa di dasbor sesuai bimbingan guru
+                    if(window.allStudentsData) {
+                        let activeStudents = window.allStudentsData;
+                        if (window.currentUserRole !== 'Admin') {
+                            const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                                (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
+                                h.id === window.currentUserLinked
+                            );
+                            const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                            activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
+                        }
+                        const statTotalSiswa = document.getElementById('stat-total-siswa');
+                        if(statTotalSiswa) statTotalSiswa.innerText = activeStudents.length;
+                        updateDashboardStatsAndCharts(window.allSetoranData || []);
+                    }
+                } else {
+                    alert("Username atau Password salah! Pastikan data akun sudah terdaftar di menu Kelola Akun.");
+                }
+            } catch (err) {
+                alert("Gagal melakukan verifikasi login ke database: " + err.message);
+            }
+        };
 		
 		
         window.renderAccountsTable = function(accounts) {
@@ -1576,83 +1652,7 @@
 	
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        window.handleLogin = async function(e) {
-            e.preventDefault();
-            const uInput = document.getElementById('login-username').value.trim().toLowerCase();
-            const pInput = document.getElementById('login-password').value.trim();
-
-            if (uInput === 'admin' && pInput === 'admin') {
-                window.currentUser = 'Administrator Utama';
-                window.currentUserRole = 'Admin';
-                window.currentUserLinked = 'ALL';
-                window.currentUserName = 'Administrator';
-                
-                document.getElementById('user-display-name').innerText = 'ADMINISTRATOR';
-                document.getElementById('user-role').innerText = 'Administrator';
-                document.getElementById('login-page').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-
-                applyRoleBasedSidebar('Admin');
-                switchTab('dashboard');
-                if(window.allStudentsData) {
-                    document.getElementById('stat-total-siswa').innerText = window.allStudentsData.length;
-                    renderStudentsTable(window.allStudentsData);
-                }
-                return;
-            }
-
-            try {
-                // Ambil data akun langsung dari koleksi 'accounts' di Firestore
-                const q = query(collection(db, "accounts"));
-                const querySnapshot = await getDocs(q);
-                
-                let matchedAccount = null;
-                querySnapshot.forEach((docSnap) => {
-                    const acc = docSnap.data();
-                    const dbUser = acc.username ? String(acc.username).trim().toLowerCase() : '';
-                    const dbPass = acc.password ? String(acc.password).trim() : '';
-                    if (dbUser === uInput && dbPass === pInput) {
-                        matchedAccount = { id: docSnap.id, ...acc };
-                    }
-                });
-
-                if (matchedAccount) {
-                    window.currentUserRole = matchedAccount.role;
-                    window.currentUserLinked = matchedAccount.linked || 'ALL';
-                    window.currentUser = matchedAccount.name;
-                    window.currentUserName = matchedAccount.name;
-
-                    document.getElementById('user-display-name').innerText = matchedAccount.name.toUpperCase();
-                    document.getElementById('user-role').innerText = formatRoleName(matchedAccount.role);
-                    
-                    document.getElementById('login-page').classList.add('hidden');
-                    document.getElementById('app-container').classList.remove('hidden');
-
-                    window.applyRoleBasedSidebar(matchedAccount.role);
-                    switchTab('dashboard');
-
-                    // Hitung jumlah siswa di dasbor sesuai bimbingan guru
-                    if(window.allStudentsData) {
-                        let activeStudents = window.allStudentsData;
-                        if (window.currentUserRole !== 'Admin') {
-                            const guruHalaqah = (window.allHalaqahData || []).filter(h => 
-                                (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
-                                h.id === window.currentUserLinked
-                            );
-                            const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
-                            activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
-                        }
-                        const statTotalSiswa = document.getElementById('stat-total-siswa');
-                        if(statTotalSiswa) statTotalSiswa.innerText = activeStudents.length;
-                        updateDashboardStatsAndCharts(window.allSetoranData || []);
-                    }
-                } else {
-                    alert("Username atau Password salah! Pastikan data akun sudah terdaftar di menu Kelola Akun.");
-                }
-            } catch (err) {
-                alert("Gagal melakukan verifikasi login ke database: " + err.message);
-            }
-        };
+        
 
         window.applyRoleBasedSidebar = function(role) {
             const allNavs = [
