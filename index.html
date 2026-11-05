@@ -855,7 +855,7 @@
             `).join('');
         };
 
-		window.handleLogin = async function(e) {
+		window.handleLogin = function(e) {
             e.preventDefault();
             const uInput = document.getElementById('login-username').value.trim().toLowerCase();
             const pInput = document.getElementById('login-password').value.trim();
@@ -880,55 +880,50 @@
                 return;
             }
 
-            try {
-                // Mengambil data akun langsung dari database Firestore
-                const q = query(collection(db, "accounts"));
-                const querySnapshot = await getDocs(q);
+            if (!window.allAccountsData || window.allAccountsData.length === 0) {
+                alert("Data akun sedang disinkronisasi dengan database. Mohon tunggu 2 detik lalu klik Login kembali.");
+                return;
+            }
+
+            // Mencocokkan dengan data akun yang sudah aktif di memori
+            const matchedAccount = window.allAccountsData.find(acc => {
+                const dbUser = acc.username ? String(acc.username).trim().toLowerCase() : '';
+                const dbPass = acc.password ? String(acc.password).trim() : '';
+                return dbUser === uInput && dbPass === pInput;
+            });
+
+            if (matchedAccount) {
+                window.currentUserRole = matchedAccount.role;
+                window.currentUserLinked = matchedAccount.linked || 'ALL';
+                window.currentUser = matchedAccount.name;
+                window.currentUserName = matchedAccount.name;
+
+                document.getElementById('user-display-name').innerText = matchedAccount.name.toUpperCase();
+                document.getElementById('user-role').innerText = formatRoleName(matchedAccount.role);
                 
-                let matchedAccount = null;
-                querySnapshot.forEach((docSnap) => {
-                    const acc = docSnap.data();
-                    const dbUser = acc.username ? String(acc.username).trim().toLowerCase() : '';
-                    const dbPass = acc.password ? String(acc.password).trim() : '';
-                    if (dbUser === uInput && dbPass === pInput) {
-                        matchedAccount = { id: docSnap.id, ...acc };
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+
+                window.applyRoleBasedSidebar(matchedAccount.role);
+                switchTab('dashboard');
+
+                // Hitung total siswa khusus dasbor guru tahfiz
+                if(window.allStudentsData) {
+                    let activeStudents = window.allStudentsData;
+                    if (window.currentUserRole !== 'Admin') {
+                        const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                            (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
+                            h.id === window.currentUserLinked
+                        );
+                        const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                        activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
                     }
-                });
-
-                if (matchedAccount) {
-                    window.currentUserRole = matchedAccount.role;
-                    window.currentUserLinked = matchedAccount.linked || 'ALL';
-                    window.currentUser = matchedAccount.name;
-                    window.currentUserName = matchedAccount.name;
-
-                    document.getElementById('user-display-name').innerText = matchedAccount.name.toUpperCase();
-                    document.getElementById('user-role').innerText = formatRoleName(matchedAccount.role);
-                    
-                    document.getElementById('login-page').classList.add('hidden');
-                    document.getElementById('app-container').classList.remove('hidden');
-
-                    window.applyRoleBasedSidebar(matchedAccount.role);
-                    switchTab('dashboard');
-
-                    if(window.allStudentsData) {
-                        let activeStudents = window.allStudentsData;
-                        if (window.currentUserRole !== 'Admin') {
-                            const guruHalaqah = (window.allHalaqahData || []).filter(h => 
-                                (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
-                                h.id === window.currentUserLinked
-                            );
-                            const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
-                            activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
-                        }
-                        const statTotalSiswa = document.getElementById('stat-total-siswa');
-                        if(statTotalSiswa) statTotalSiswa.innerText = activeStudents.length;
-                        updateDashboardStatsAndCharts(window.allSetoranData || []);
-                    }
-                } else {
-                    alert("Username atau Password salah!");
+                    const statTotalSiswa = document.getElementById('stat-total-siswa');
+                    if(statTotalSiswa) statTotalSiswa.innerText = activeStudents.length;
+                    updateDashboardStatsAndCharts(window.allSetoranData || []);
                 }
-            } catch (err) {
-                alert("Gagal memverifikasi login: " + err.message);
+            } else {
+                alert("Username atau Password salah! Periksa kembali data akun Anda.");
             }
         };
 		
