@@ -1215,8 +1215,9 @@
 
             // Jika tab yang dibuka adalah input setoran, muat ulang dropdown siswa khusus halaqahnya
             if (tabId === 'input-setoran') {
-                window.populateStudentDropdowns(window.allStudentsData);
-            }
+            window.populateStudentDropdowns(window.allStudentsData);
+            window.initSurahDropdown();
+        }
         };
 
         window.closeModal = function(id) { 
@@ -1518,209 +1519,138 @@
             renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
         }, handleFirestoreError);
 		
-		// Data Master Referensi Surah Al-Quran (Lengkap Juz 1 - 30)
+		// Data Master Referensi Surah Al-Quran (Lengkap No. Urut, Nama, Juz, dan Max Ayat)
         const masterSurahQuran = [
-            // JUZ 1
-            { name: "Al-Fatihah", juz: 1, maxAyat: 7 },
-            { name: "Al-Baqarah (Bagian 1)", juz: 1, maxAyat: 141 },
-            // JUZ 2
-            { name: "Al-Baqarah (Bagian 2)", juz: 2, maxAyat: 252 },
-            // JUZ 3
-            { name: "Al-Baqarah (Bagian 3)", juz: 3, maxAyat: 286 },
-            { name: "Ali 'Imran (Bagian 1)", juz: 3, maxAyat: 91 },
-            // JUZ 4
-            { name: "Ali 'Imran (Bagian 2)", juz: 4, maxAyat: 200 },
-            { name: "An-Nisa' (Bagian 1)", juz: 4, maxAyat: 23 },
-            // JUZ 5
-            { name: "An-Nisa' (Bagian 2)", juz: 5, maxAyat: 147 },
-            // JUZ 6
-            { name: "An-Nisa' (Bagian 3)", juz: 6, maxAyat: 176 },
-            { name: "Al-Ma'idah (Bagian 1)", juz: 6, maxAyat: 81 },
-            // JUZ 7
-            { name: "Al-Ma'idah (Bagian 2)", juz: 7, maxAyat: 120 },
-            { name: "Al-An'am (Bagian 1)", juz: 7, maxAyat: 110 },
-            // JUZ 8
-            { name: "Al-An'am (Bagian 2)", juz: 8, maxAyat: 165 },
-            { name: "Al-A'raf (Bagian 1)", juz: 8, maxAyat: 87 },
-            // JUZ 9
-            { name: "Al-A'raf (Bagian 2)", juz: 9, maxAyat: 206 },
-            { name: "Al-Anfal (Bagian 1)", juz: 9, maxAyat: 40 },
-            // JUZ 10
-            { name: "Al-Anfal (Bagian 2)", juz: 10, maxAyat: 75 },
-            { name: "At-Taubah (Bagian 1)", juz: 10, maxAyat: 93 },
-            // JUZ 11
-            { name: "At-Taubah (Bagian 2)", juz: 11, maxAyat: 129 },
-            { name: "Yunus (Bagian 1)", juz: 11, maxAyat: 109 },
-            { name: "Hud (Bagian 1)", juz: 11, maxAyat: 5 },
-            // JUZ 12
-            { name: "Hud (Bagian 2)", juz: 12, maxAyat: 123 },
-            { name: "Yusuf (Bagian 1)", juz: 12, maxAyat: 52 },
-            // JUZ 13
-            { name: "Yusuf (Bagian 2)", juz: 13, maxAyat: 111 },
-            { name: "Ar-Ra'd", juz: 13, maxAyat: 43 },
-            { name: "Ibrahim", juz: 13, maxAyat: 52 },
-            // JUZ 14
-            { name: "Al-Hijr", juz: 14, maxAyat: 99 },
-            { name: "An-Nahl", juz: 14, maxAyat: 128 },
-            // JUZ 15
-            { name: "Al-Isra' (Bani Israil)", juz: 15, maxAyat: 111 },
-            { name: "Al-Kahf (Bagian 1)", juz: 15, maxAyat: 74 },
-            // JUZ 16
-            { name: "Al-Kahf (Bagian 2)", juz: 16, maxAyat: 110 },
-            { name: "Maryam", juz: 16, maxAyat: 98 },
-            { name: "Ta-Ha", juz: 16, maxAyat: 135 },
-            // JUZ 17
-            { name: "Al-Anbiya'", juz: 17, maxAyat: 112 },
-            { name: "Al-Hajj", juz: 17, maxAyat: 78 },
-            // JUZ 18
-            { name: "Al-Mu'minun", juz: 18, maxAyat: 118 },
-            { name: "An-Nur", juz: 18, maxAyat: 64 },
-            { name: "Al-Furqan (Bagian 1)", juz: 18, maxAyat: 20 },
-            // JUZ 19
-            { name: "Al-Furqan (Bagian 2)", juz: 19, maxAyat: 77 },
-            { name: "Asy-Syu'ara'", juz: 19, maxAyat: 227 },
-            { name: "An-Naml (Bagian 1)", juz: 19, maxAyat: 55 },
-            // JUZ 20
-            { name: "An-Naml (Bagian 2)", juz: 20, maxAyat: 93 },
-            { name: "Al-Qasas", juz: 20, maxAyat: 88 },
-            { name: "Al-Ankabut (Bagian 1)", juz: 20, maxAyat: 45 },
-            // JUZ 21
-            { name: "Al-Ankabut (Bagian 2)", juz: 21, maxAyat: 69 },
-            { name: "Ar-Rum", juz: 21, maxAyat: 60 },
-            { name: "Luqman", juz: 21, maxAyat: 34 },
-            { name: "As-Sajdah", juz: 21, maxAyat: 30 },
-            { name: "Al-Ahzab (Bagian 1)", juz: 21, maxAyat: 30 },
-            // JUZ 22
-            { name: "Al-Ahzab (Bagian 2)", juz: 22, maxAyat: 73 },
-            { name: "Saba'", juz: 22, maxAyat: 54 },
-            { name: "Fatir", juz: 22, maxAyat: 45 },
-            { name: "Ya-Sin (Bagian 1)", juz: 22, maxAyat: 27 },
-            // JUZ 23
-            { name: "Ya-Sin (Bagian 2)", juz: 23, maxAyat: 83 },
-            { name: "As-Saffat", juz: 23, maxAyat: 182 },
-            { name: "Sad", juz: 23, maxAyat: 88 },
-            { name: "Az-Zumar (Bagian 1)", juz: 23, maxAyat: 31 },
-            // JUZ 24
-            { name: "Az-Zumar (Bagian 2)", juz: 24, maxAyat: 75 },
-            { name: "Ghafir (Al-Mu'min)", juz: 24, maxAyat: 85 },
-            { name: "Fussilat (Bagian 1)", juz: 24, maxAyat: 46 },
-            // JUZ 25
-            { name: "Fussilat (Bagian 2)", juz: 25, maxAyat: 54 },
-            { name: "Asy-Syura", juz: 25, maxAyat: 53 },
-            { name: "Az-Zukhruf", juz: 25, maxAyat: 89 },
-            { name: "Ad-Dukhan", juz: 25, maxAyat: 59 },
-            { name: "Al-Jasiyah", juz: 25, maxAyat: 37 },
-            // JUZ 26
-            { name: "Al-Ahqaf", juz: 26, maxAyat: 35 },
-            { name: "Muhammad", juz: 26, maxAyat: 38 },
-            { name: "Al-Fath", juz: 26, maxAyat: 29 },
-            { name: "Al-Hujurat", juz: 26, maxAyat: 18 },
-            { name: "Qaf", juz: 26, maxAyat: 45 },
-            { name: "Az-Zariyat (Bagian 1)", juz: 26, maxAyat: 30 },
-            // JUZ 27
-            { name: "Az-Zariyat (Bagian 2)", juz: 27, maxAyat: 60 },
-            { name: "At-Tur", juz: 27, maxAyat: 49 },
-            { name: "An-Najm", juz: 27, maxAyat: 62 },
-            { name: "Al-Qamar", juz: 27, maxAyat: 55 },
-            { name: "Ar-Rahman", juz: 27, maxAyat: 78 },
-            { name: "Al-Waqi'ah", juz: 27, maxAyat: 96 },
-            { name: "Al-Hadid", juz: 27, maxAyat: 29 },
-            // JUZ 28
-            { name: "Al-Mujadilah", juz: 28, maxAyat: 22 },
-            { name: "Al-Hasyr", juz: 28, maxAyat: 24 },
-            { name: "Al-Mumtahanah", juz: 28, maxAyat: 13 },
-            { name: "As-Saff", juz: 28, maxAyat: 14 },
-            { name: "Al-Jumu'ah", juz: 28, maxAyat: 11 },
-            { name: "Al-Munafiqun", juz: 28, maxAyat: 11 },
-            { name: "At-Taghabun", juz: 28, maxAyat: 18 },
-            { name: "At-Talaq", juz: 28, maxAyat: 12 },
-            { name: "At-Tahrim", juz: 28, maxAyat: 12 },
-            // JUZ 29
-            { name: "Al-Mulk", juz: 29, maxAyat: 30 },
-            { name: "Al-Qalam", juz: 29, maxAyat: 52 },
-            { name: "Al-Haqqah", juz: 29, maxAyat: 52 },
-            { name: "Al-Ma'arij", juz: 29, maxAyat: 44 },
-            { name: "Nuh", juz: 29, maxAyat: 28 },
-            { name: "Al-Jinn", juz: 29, maxAyat: 28 },
-            { name: "Al-Muzzammil", juz: 29, maxAyat: 20 },
-            { name: "Al-Muddatstsir", juz: 29, maxAyat: 56 },
-            { name: "Al-Qiyamah", juz: 29, maxAyat: 40 },
-            { name: "Al-Insan", juz: 29, maxAyat: 31 },
-            { name: "Al-Mursalat", juz: 29, maxAyat: 50 },
-            // JUZ 30 (Juz Amma)
-            { name: "An-Naba'", juz: 30, maxAyat: 40 },
-            { name: "An-Nazi'at", juz: 30, maxAyat: 46 },
-            { name: "'Abasa", juz: 30, maxAyat: 42 },
-            { name: "At-Takwir", juz: 30, maxAyat: 29 },
-            { name: "Al-Infitar", juz: 30, maxAyat: 19 },
-            { name: "Al-Mutaffifin", juz: 30, maxAyat: 36 },
-            { name: "Al-Inshiqaq", juz: 30, maxAyat: 25 },
-            { name: "Al-Buruj", juz: 30, maxAyat: 22 },
-            { name: "At-Tariq", juz: 30, maxAyat: 17 },
-            { name: "Al-A'la", juz: 30, maxAyat: 19 },
-            { name: "Al-Ghasyiyah", juz: 30, maxAyat: 26 },
-            { name: "Al-Fajr", juz: 30, maxAyat: 30 },
-            { name: "Al-Balad", juz: 30, maxAyat: 20 },
-            { name: "As-Syams", juz: 30, maxAyat: 15 },
-            { name: "Al-Lail", juz: 30, maxAyat: 21 },
-            { name: "Ad-Duha", juz: 30, maxAyat: 11 },
-            { name: "Asy-Syarh", juz: 30, maxAyat: 8 },
-            { name: "At-Tin", juz: 30, maxAyat: 8 },
-            { name: "Al-'Alaq", juz: 30, maxAyat: 19 },
-            { name: "Al-Qadr", juz: 30, maxAyat: 5 },
-            { name: "Al-Bayyinah", juz: 30, maxAyat: 8 },
-            { name: "Az-Zalzalah", juz: 30, maxAyat: 8 },
-            { name: "Al-'Adiyat", juz: 30, maxAyat: 11 },
-            { name: "Al-Qari'ah", juz: 30, maxAyat: 11 },
-            { name: "At-Takasur", juz: 30, maxAyat: 8 },
-            { name: "Al-'Asr", juz: 30, maxAyat: 3 },
-            { name: "Al-Humazah", juz: 30, maxAyat: 9 },
-            { name: "Al-Fil", juz: 30, maxAyat: 5 },
-            { name: "Quraisy", juz: 30, maxAyat: 4 },
-            { name: "Al-Ma'un", juz: 30, maxAyat: 7 },
-            { name: "Al-Kautsar", juz: 30, maxAyat: 3 },
-            { name: "Al-Kafirun", juz: 30, maxAyat: 6 },
-            { name: "An-Nasr", juz: 30, maxAyat: 3 },
-            { name: "Al-Lahab", juz: 30, maxAyat: 5 },
-            { name: "Al-Ikhlas", juz: 30, maxAyat: 4 },
-            { name: "Al-Falaq", juz: 30, maxAyat: 5 },
-            { name: "An-Nas", juz: 30, maxAyat: 6 }
+            { no: 1, name: "Al-Fatihah", juz: 1, maxAyat: 7 },
+            { no: 2, name: "Al-Baqarah", juz: 1, maxAyat: 286 },
+            { no: 3, name: "Ali 'Imran", juz: 3, maxAyat: 200 },
+            { no: 4, name: "An-Nisa'", juz: 4, maxAyat: 176 },
+            { no: 5, name: "Al-Ma'idah", juz: 6, maxAyat: 120 },
+            { no: 6, name: "Al-An'am", juz: 7, maxAyat: 165 },
+            { no: 7, name: "Al-A'raf", juz: 8, maxAyat: 206 },
+            { no: 8, name: "Al-Anfal", juz: 9, maxAyat: 75 },
+            { no: 9, name: "At-Taubah", juz: 10, maxAyat: 129 },
+            { no: 10, name: "Yunus", juz: 11, maxAyat: 109 },
+            { no: 11, name: "Hud", juz: 11, maxAyat: 123 },
+            { no: 12, name: "Yusuf", juz: 12, maxAyat: 111 },
+            { no: 13, name: "Ar-Ra'd", juz: 13, maxAyat: 43 },
+            { no: 14, name: "Ibrahim", juz: 13, maxAyat: 52 },
+            { no: 15, name: "Al-Hijr", juz: 14, maxAyat: 99 },
+            { no: 16, name: "An-Nahl", juz: 14, maxAyat: 128 },
+            { no: 17, name: "Al-Isra'", juz: 15, maxAyat: 111 },
+            { no: 18, name: "Al-Kahf", juz: 15, maxAyat: 110 },
+            { no: 19, name: "Maryam", juz: 16, maxAyat: 98 },
+            { no: 20, name: "Ta-Ha", juz: 16, maxAyat: 135 },
+            { no: 21, name: "Al-Anbiya'", juz: 17, maxAyat: 112 },
+            { no: 22, name: "Al-Hajj", juz: 17, maxAyat: 78 },
+            { no: 23, name: "Al-Mu'minun", juz: 18, maxAyat: 118 },
+            { no: 24, name: "An-Nur", juz: 18, maxAyat: 64 },
+            { no: 25, name: "Al-Furqan", juz: 18, maxAyat: 77 },
+            { no: 26, name: "Asy-Syu'ara'", juz: 19, maxAyat: 227 },
+            { no: 27, name: "An-Naml", juz: 19, maxAyat: 93 },
+            { no: 28, name: "Al-Qasas", juz: 20, maxAyat: 88 },
+            { no: 29, name: "Al-Ankabut", juz: 20, maxAyat: 69 },
+            { no: 30, name: "Ar-Rum", juz: 21, maxAyat: 60 },
+            { no: 31, name: "Luqman", juz: 21, maxAyat: 34 },
+            { no: 32, name: "As-Sajdah", juz: 21, maxAyat: 30 },
+            { no: 33, name: "Al-Ahzab", juz: 21, maxAyat: 73 },
+            { no: 34, name: "Saba'", juz: 22, maxAyat: 54 },
+            { no: 35, name: "Fatir", juz: 22, maxAyat: 45 },
+            { no: 36, name: "Ya-Sin", juz: 22, maxAyat: 83 },
+            { no: 37, name: "As-Saffat", juz: 23, maxAyat: 182 },
+            { no: 38, name: "Sad", juz: 23, maxAyat: 88 },
+            { no: 39, name: "Az-Zumar", juz: 23, maxAyat: 75 },
+            { no: 40, name: "Ghafir", juz: 24, maxAyat: 85 },
+            { no: 41, name: "Fussilat", juz: 24, maxAyat: 54 },
+            { no: 42, name: "Asy-Syura", juz: 25, maxAyat: 53 },
+            { no: 43, name: "Az-Zukhruf", juz: 25, maxAyat: 89 },
+            { no: 44, name: "Ad-Dukhan", juz: 25, maxAyat: 59 },
+            { no: 45, name: "Al-Jasiyah", juz: 25, maxAyat: 37 },
+            { no: 46, name: "Al-Ahqaf", juz: 26, maxAyat: 35 },
+            { no: 47, name: "Muhammad", juz: 26, maxAyat: 38 },
+            { no: 48, name: "Al-Fath", juz: 26, maxAyat: 29 },
+            { no: 49, name: "Al-Hujurat", juz: 26, maxAyat: 18 },
+            { no: 50, name: "Qaf", juz: 26, maxAyat: 45 },
+            { no: 51, name: "Az-Zariyat", juz: 26, maxAyat: 60 },
+            { no: 52, name: "At-Tur", juz: 27, maxAyat: 49 },
+            { no: 53, name: "An-Najm", juz: 27, maxAyat: 62 },
+            { no: 54, name: "Al-Qamar", juz: 27, maxAyat: 55 },
+            { no: 55, name: "Ar-Rahman", juz: 27, maxAyat: 78 },
+            { no: 56, name: "Al-Waqi'ah", juz: 27, maxAyat: 96 },
+            { no: 57, name: "Al-Hadid", juz: 27, maxAyat: 29 },
+            { no: 58, name: "Al-Mujadilah", juz: 28, maxAyat: 22 },
+            { no: 59, name: "Al-Hasyr", juz: 28, maxAyat: 24 },
+            { no: 60, name: "Al-Mumtahanah", juz: 28, maxAyat: 13 },
+            { no: 61, name: "As-Saff", juz: 28, maxAyat: 14 },
+            { no: 62, name: "Al-Jumu'ah", juz: 28, maxAyat: 11 },
+            { no: 63, name: "Al-Munafiqun", juz: 28, maxAyat: 11 },
+            { no: 64, name: "At-Taghabun", juz: 28, maxAyat: 18 },
+            { no: 65, name: "At-Talaq", juz: 28, maxAyat: 12 },
+            { no: 66, name: "At-Tahrim", juz: 28, maxAyat: 12 },
+            { no: 67, name: "Al-Mulk", juz: 29, maxAyat: 30 },
+            { no: 68, name: "Al-Qalam", juz: 29, maxAyat: 52 },
+            { no: 69, name: "Al-Haqqah", juz: 29, maxAyat: 52 },
+            { no: 70, name: "Al-Ma'arij", juz: 29, maxAyat: 44 },
+            { no: 71, name: "Nuh", juz: 29, maxAyat: 28 },
+            { no: 72, name: "Al-Jinn", juz: 29, maxAyat: 28 },
+            { no: 73, name: "Al-Muzzammil", juz: 29, maxAyat: 20 },
+            { no: 74, name: "Al-Muddatstsir", juz: 29, maxAyat: 56 },
+            { no: 75, name: "Al-Qiyamah", juz: 29, maxAyat: 40 },
+            { no: 76, name: "Al-Insan", juz: 29, maxAyat: 31 },
+            { no: 77, name: "Al-Mursalat", juz: 29, maxAyat: 50 },
+            { no: 78, name: "An-Naba'", juz: 30, maxAyat: 40 },
+            { no: 79, name: "An-Nazi'at", juz: 30, maxAyat: 46 },
+            { no: 80, name: "'Abasa", juz: 30, maxAyat: 42 },
+            { no: 81, name: "At-Takwir", juz: 30, maxAyat: 29 },
+            { no: 82, name: "Al-Infitar", juz: 30, maxAyat: 19 },
+            { no: 83, name: "Al-Mutaffifin", juz: 30, maxAyat: 36 },
+            { no: 84, name: "Al-Inshiqaq", juz: 30, maxAyat: 25 },
+            { no: 85, name: "Al-Buruj", juz: 30, maxAyat: 22 },
+            { no: 86, name: "At-Tariq", juz: 30, maxAyat: 17 },
+            { no: 87, name: "Al-A'la", juz: 30, maxAyat: 19 },
+            { no: 88, name: "Al-Ghasyiyah", juz: 30, maxAyat: 26 },
+            { no: 89, name: "Al-Fajr", juz: 30, maxAyat: 30 },
+            { no: 90, name: "Al-Balad", juz: 30, maxAyat: 20 },
+            { no: 91, name: "As-Syams", juz: 30, maxAyat: 15 },
+            { no: 92, name: "Al-Lail", juz: 30, maxAyat: 21 },
+            { no: 93, name: "Ad-Duha", juz: 30, maxAyat: 11 },
+            { no: 94, name: "Asy-Syarh", juz: 30, maxAyat: 8 },
+            { no: 95, name: "At-Tin", juz: 30, maxAyat: 8 },
+            { no: 96, name: "Al-'Alaq", juz: 30, maxAyat: 19 },
+            { no: 97, name: "Al-Qadr", juz: 30, maxAyat: 5 },
+            { no: 98, name: "Al-Bayyinah", juz: 30, maxAyat: 8 },
+            { no: 99, name: "Az-Zalzalah", juz: 30, maxAyat: 8 },
+            { no: 100, name: "Al-'Adiyat", juz: 30, maxAyat: 11 },
+            { no: 101, name: "Al-Qari'ah", juz: 30, maxAyat: 11 },
+            { no: 102, name: "At-Takasur", juz: 30, maxAyat: 8 },
+            { no: 103, name: "Al-'Asr", juz: 30, maxAyat: 3 },
+            { no: 104, name: "Al-Humazah", juz: 30, maxAyat: 9 },
+            { no: 105, name: "Al-Fil", juz: 30, maxAyat: 5 },
+            { no: 106, name: "Quraisy", juz: 30, maxAyat: 4 },
+            { no: 107, name: "Al-Ma'un", juz: 30, maxAyat: 7 },
+            { no: 108, name: "Al-Kautsar", juz: 30, maxAyat: 3 },
+            { no: 109, name: "Al-Kafirun", juz: 30, maxAyat: 6 },
+            { no: 110, name: "An-Nasr", juz: 30, maxAyat: 3 },
+            { no: 111, name: "Al-Lahab", juz: 30, maxAyat: 5 },
+            { no: 112, name: "Al-Ikhlas", juz: 30, maxAyat: 4 },
+            { no: 113, name: "Al-Falaq", juz: 30, maxAyat: 5 },
+            { no: 114, name: "An-Nas", juz: 30, maxAyat: 6 }
         ];
-		
-		// Inisialisasi pilihan dropdown surah saat aplikasi siap
+
+        // Fungsi untuk mengisi dropdown dengan format: "1. Al-Fatihah (Juz 1)"
         window.initSurahDropdown = function() {
             const surahSelect = document.getElementById('input-surah');
             if(!surahSelect) return;
 
             surahSelect.innerHTML = '<option value="">-- Pilih Surah --</option>' + 
-                masterSurahQuran.map(s => `<option value="${s.name}" data-juz="${s.juz}" data-max="${s.maxAyat}">${s.name} (Juz ${s.juz} • ${s.maxAyat} Ayat)</option>`).join('');
+                masterSurahQuran.map(s => `
+                    <option value="${s.name}" data-juz="${s.juz}" data-max="${s.maxAyat}">
+                        ${s.no}. ${s.name} (Juz ${s.juz})
+                    </option>
+                `).join('');
         };
 
-        // Fungsi otomatis terpicu saat Ustadz/Guru memilih surah
-        window.handleSurahChange = function() {
-            const surahSelect = document.getElementById('input-surah');
-            const juzInput = document.getElementById('input-juz');
-            const ayatSelesaiInput = document.getElementById('input-ayat-selesai');
-            
-            const selectedOption = surahSelect.options[surahSelect.selectedIndex];
-            
-            if (selectedOption && selectedOption.value) {
-                const juz = selectedOption.getAttribute('data-juz');
-                const maxAyat = selectedOption.getAttribute('data-max');
-
-                // Otomatis isi Juz dan batasi atribut max pada input ayat
-                if (juzInput) juzInput.value = juz;
-                if (ayatSelesaiInput) {
-                    ayatSelesaiInput.max = maxAyat;
-                    ayatSelesaiInput.placeholder = `Maks: ${maxAyat} Ayat`;
-                }
-            } else {
-                if (juzInput) juzInput.value = '';
-                if (ayatSelesaiInput) ayatSelesaiInput.value = '';
-            }
-        };
-
-        // Panggil inisialisasi dropdown surah saat halaman dimuat
+        // Panggil inisialisasi dropdown surah saat halaman atau tab siap
         document.addEventListener('DOMContentLoaded', () => {
             window.initSurahDropdown();
         });
