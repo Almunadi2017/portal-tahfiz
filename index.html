@@ -1685,6 +1685,59 @@
         };
 		
 		
+		
+		window.submitSetoran = async function(e) {
+            e.preventDefault();
+            
+            const siswaVal = document.getElementById('input-siswa').value;
+            const jenisVal = document.getElementById('input-jenis').value;
+            const surahSelect = document.getElementById('input-surah');
+            // Ambil nama bersih surah tanpa nomor urut (misal: "Al-Ikhlas")
+            const surahVal = surahSelect.options[surahSelect.selectedIndex]?.text || document.getElementById('input-surah').value;
+            const juzVal = document.getElementById('input-juz').value;
+            const ayatMulaiVal = document.getElementById('input-ayat-mulai').value;
+            const ayatSelesaiVal = document.getElementById('input-ayat-selesai').value;
+            const kualitasVal = document.getElementById('input-kualitas').value;
+            const catatanVal = document.getElementById('input-catatan').value;
+
+            if (!siswaVal || !surahVal || !juzVal) {
+                alert("Mohon lengkapi data siswa, surah, dan nomor juz terlebih dahulu!");
+                return;
+            }
+
+            const dataSetoran = {
+                siswa: siswaVal,
+                jenis: jenisVal,
+                surah: surahVal,
+                juz: juzVal,
+                ayatMulai: ayatMulaiVal,
+                ayatSelesai: ayatSelesaiVal,
+                kualitas: kualitasVal,
+                catatan: catatanVal,
+                penguji: window.currentUser || window.currentUserName || 'Guru Tahfiz',
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                // Simpan data ke koleksi 'setoran' di Firestore
+                await addDoc(collection(db, "setoran"), dataSetoran);
+                
+                // Tampilkan notifikasi sukses sesuai permintaan
+                alert("Alhamdulillah! Catatan setoran berhasil disimpan ke database.");
+                
+                // Reset formulir input
+                document.getElementById('setoran-form').reset();
+                
+                // Otomatis arahkan (switch) tampilan ke menu Data Mutabaah agar guru bisa langsung melihat hasilnya
+                switchTab('data-mutabaah');
+            } catch (err) {
+                console.error("Error menyimpan setoran:", err);
+                alert("Gagal menyimpan setoran ke Firebase: " + err.message);
+            }
+        };
+		
+		
+		
     </script>
 	
 	
