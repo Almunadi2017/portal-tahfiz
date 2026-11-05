@@ -1217,6 +1217,11 @@
             const activeNav = document.getElementById('nav-' + tabId);
             if(activeNav) activeNav.className = "flex items-center px-4 py-2.5 font-medium rounded-lg bg-emerald-600 text-white shadow-sm";
             document.getElementById('page-title').innerText = tabId.replace('-', ' ').toUpperCase();
+
+            // Jika tab yang dibuka adalah input setoran, muat ulang dropdown siswa khusus halaqahnya
+            if (tabId === 'input-setoran') {
+                window.populateStudentDropdowns(window.allStudentsData);
+            }
         };
 
         window.closeModal = function(id) { 
@@ -1304,7 +1309,24 @@
 
         window.populateStudentDropdowns = function(students) {
             const select = document.getElementById('input-siswa');
-            if(select) select.innerHTML = '<option value="">-- Pilih Siswa --</option>' + students.map(s => `<option value="${s.name}">${s.name} (${s.kelas})</option>`).join('');
+            if(!select) return;
+
+            let studentsList = students || window.allStudentsData || [];
+
+            // Jika yang login BUKAN Admin (artinya Guru Tahfiz), filter khusus siswa di kelompok halaqahnya
+            if (window.currentUserRole && window.currentUserRole !== 'Admin') {
+                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                    (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
+                    h.id === window.currentUserLinked
+                );
+                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                
+                // Saring siswa yang idHalaqahnya cocok dengan kelompok halaqah guru tersebut
+                studentsList = studentsList.filter(s => halaqahIds.includes(s.idHalaqah));
+            }
+
+            select.innerHTML = '<option value="">-- Pilih Siswa --</option>' + 
+                studentsList.map(s => `<option value="${s.name}">${s.name} (${s.kelas || 'Tanpa Kelas'})</option>`).join('');
         };
 
         window.updateDashboardStatsAndCharts = function(list) {
