@@ -777,812 +777,7 @@
     </div>
     
     <!-- SCRIPTS -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        window.currentUser = null;
-        window.currentUserRole = 'Admin';
-        window.currentUserLinked = 'ALL';
-        window.currentUserName = 'Administrator';
-        window.currentFilteredMutabaah = [];
-        window.allAccountsData = [];
-        window.allSetoranData = [];
-        window.allStudentsData = [];
-        window.allKelasData = [];
-        window.allHalaqahData = [];
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyADdAnrvYRIAmErxGk40rNokK1eLo5RaAk",
-            authDomain: "portal-tahfiz-sekolah.firebaseapp.com",
-            projectId: "portal-tahfiz-sekolah",
-            storageBucket: "portal-tahfiz-sekolah.firebasestorage.app",
-            messagingSenderId: "726662973703",
-            appId: "1:726662973703:web:6c8ad8af1f2448e43adda2",
-            measurementId: "G-2H9C6QLVST"
-        };
-
-        try {
-            const app = initializeApp(firebaseConfig);
-            const db = getFirestore(app);
-            window.db = db;
-            document.getElementById('firebase-status').innerText = 'Firebase Terhubung';
-            document.getElementById('firebase-status').className = 'text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium';
-        } catch (err) {
-            console.error("Firebase Init Error:", err);
-            const statusEl = document.getElementById('firebase-status');
-            if(statusEl) {
-                statusEl.innerText = 'Gagal Terhubung';
-                statusEl.className = 'text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-medium';
-            }
-        }
-
-        const updateFirebaseConnectedStatus = () => {
-            const statusEl = document.getElementById('firebase-status');
-            if(statusEl) {
-                statusEl.innerText = 'Firebase Terhubung';
-                statusEl.className = 'text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium';
-            }
-        };
-
-        const handleFirestoreError = (err) => {
-            console.error("Firestore Error:", err);
-            const statusEl = document.getElementById('firebase-status');
-            if(statusEl) {
-                statusEl.innerText = 'Akses Ditolak';
-                statusEl.className = 'text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-medium';
-            }
-        };
-
-        // Global UI Render Functions
-        window.renderStudentsTable = function(students) {
-            const tbody = document.getElementById('students-table-body');
-            if(!tbody) return;
-            if (students.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data siswa.</td></tr>'; return; }
-            tbody.innerHTML = students.map(s => `
-                <tr class="hover:bg-slate-50">
-                    <td class="py-3 px-4 font-mono font-semibold">${s.nis || '-'}</td>
-                    <td class="py-3 px-4 font-bold text-slate-800">${s.name}</td>
-                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${s.kelas || '-'}</span></td>
-                    <td class="py-3 px-4">${s.target || 'Juz 30'}</td>
-                    <td class="py-3 px-4">${s.guardian || '-'}</td>
-                    <td class="py-3 px-4"><a href="https://wa.me/${s.phone}" target="_blank" class="text-emerald-600 font-semibold hover:underline"><i class="fa-brands fa-whatsapp"></i> ${s.phone || '-'}</a></td>
-                    <td class="py-3 px-4 text-center space-x-2">
-                        <button onclick='openStudentModal("edit", ${JSON.stringify(s)})' class="text-blue-600 hover:underline" title="Edit Siswa"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="deleteStudent('${s.id}')" class="text-red-600 hover:underline" title="Hapus Siswa"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-        };
-
-		window.handleLogin = function(e) {
-            e.preventDefault();
-            const uInput = document.getElementById('login-username').value.trim().toLowerCase();
-            const pInput = document.getElementById('login-password').value.trim();
-
-            if (uInput === 'admin' && pInput === 'admin') {
-                window.currentUser = 'Administrator Utama';
-                window.currentUserRole = 'Admin';
-                window.currentUserLinked = 'ALL';
-                window.currentUserName = 'Administrator';
-                
-                document.getElementById('user-display-name').innerText = 'ADMINISTRATOR';
-                document.getElementById('user-role').innerText = 'Administrator';
-                document.getElementById('login-page').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-
-                applyRoleBasedSidebar('Admin');
-                switchTab('dashboard');
-                if(window.allStudentsData) {
-                    document.getElementById('stat-total-siswa').innerText = window.allStudentsData.length;
-                    renderStudentsTable(window.allStudentsData);
-                }
-                return;
-            }
-
-            if (!window.allAccountsData || window.allAccountsData.length === 0) {
-                alert("Data akun sedang disinkronisasi dengan database. Mohon tunggu 2 detik lalu klik Login kembali.");
-                return;
-            }
-
-            // Mencocokkan dengan data akun yang sudah aktif di memori
-            const matchedAccount = window.allAccountsData.find(acc => {
-                const dbUser = acc.username ? String(acc.username).trim().toLowerCase() : '';
-                const dbPass = acc.password ? String(acc.password).trim() : '';
-                return dbUser === uInput && dbPass === pInput;
-            });
-
-            if (matchedAccount) {
-                window.currentUserRole = matchedAccount.role;
-                window.currentUserLinked = matchedAccount.linked || 'ALL';
-                window.currentUser = matchedAccount.name;
-                window.currentUserName = matchedAccount.name;
-
-                document.getElementById('user-display-name').innerText = matchedAccount.name.toUpperCase();
-                document.getElementById('user-role').innerText = formatRoleName(matchedAccount.role);
-                
-                document.getElementById('login-page').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-
-                window.applyRoleBasedSidebar(matchedAccount.role);
-                switchTab('dashboard');
-
-                // Hitung total siswa khusus dasbor guru tahfiz
-                if(window.allStudentsData) {
-                    let activeStudents = window.allStudentsData;
-                    if (window.currentUserRole !== 'Admin') {
-                        const guruHalaqah = (window.allHalaqahData || []).filter(h => 
-                            (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
-                            h.id === window.currentUserLinked
-                        );
-                        const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
-                        activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
-                    }
-                    const statTotalSiswa = document.getElementById('stat-total-siswa');
-                    if(statTotalSiswa) statTotalSiswa.innerText = activeStudents.length;
-                    updateDashboardStatsAndCharts(window.allSetoranData || []);
-                }
-            } else {
-                alert("Username atau Password salah! Periksa kembali data akun Anda.");
-            }
-        };
-		
-		
-        window.renderAccountsTable = function(accounts) {
-            const tbody = document.getElementById('accounts-table-body');
-            if(!tbody) return;
-            if(accounts.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data akun.</td></tr>'; return; }
-            tbody.innerHTML = accounts.map(a => {
-                let badgeColor = 'bg-slate-100 text-slate-700';
-                if(a.role === 'Admin') badgeColor = 'bg-purple-100 text-purple-700';
-                else if(a.role === 'GuruTahfiz') badgeColor = 'bg-blue-100 text-blue-700';
-                else if(a.role === 'WaliKelas') badgeColor = 'bg-emerald-100 text-emerald-700';
-                else if(a.role === 'KepalaSekolah') badgeColor = 'bg-amber-100 text-amber-700';
-                else if(a.role === 'OrangTua') badgeColor = 'bg-rose-100 text-rose-700';
-
-                return `
-                    <tr class="hover:bg-slate-50">
-                        <td class="py-3 px-4 font-mono font-semibold">${a.userId || 'U000'}</td>
-                        <td class="py-3 px-4">${a.username}</td>
-                        <td class="py-3 px-4 font-bold">${a.name}</td>
-                        <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full font-semibold ${badgeColor}">${a.role}</span></td>
-                        <td class="py-3 px-4">${a.linked || 'ALL'}</td>
-                        <td class="py-3 px-4 text-center space-x-2">
-                            <button onclick='openAccountModal("edit", ${JSON.stringify(a)})' class="text-blue-600 hover:underline" title="Edit Akun"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteAccount('${a.id}')" class="text-red-600 hover:underline" title="Hapus Akun"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        };
-
-        window.renderPromotionTable = function(students) {
-            const tbody = document.getElementById('promotion-table-body');
-            if(!tbody) return;
-            if(students.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-400">Belum ada data siswa.</td></tr>'; return; }
-            tbody.innerHTML = students.map(s => `
-                <tr class="hover:bg-slate-50">
-                    <td class="py-3 px-4 font-bold">${s.name}</td>
-                    <td class="py-3 px-4">${s.kelas || '-'}</td>
-                    <td class="py-3 px-4">3 Juz (Juz 1, 29, 30)</td>
-                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-semibold">Naik Tingkat</span></td>
-                    <td class="py-3 px-4 text-center"><button onclick="alert('Status siswa diperbarui.')" class="bg-emerald-600 text-white px-2 py-1 rounded">Proses</button></td>
-                </tr>
-            `).join('');
-        };
-
-        window.populateClassDropdowns = function(classes) {
-            const select = document.getElementById('modal-student-class');
-            if(select) {
-                select.innerHTML = '<option value="">-- Pilih Kelas --</option>' + classes.map(c => `<option value="${c.name}">${c.name} (Wali: ${c.teacher})</option>`).join('');
-            }
-        };
-
-        window.populateStudentDropdowns = function(students) {
-            const select = document.getElementById('input-siswa');
-            if(select) select.innerHTML = '<option value="">-- Pilih Siswa --</option>' + students.map(s => `<option value="${s.name}">${s.name} (${s.kelas})</option>`).join('');
-        };
-
-        window.updateDashboardStatsAndCharts = function(list) {
-            let filteredList = [...list];
-            if (window.currentUserRole === 'WaliKelas' && window.currentUserLinked !== 'ALL') {
-                const siswaDiKelas = (window.allStudentsData || []).filter(s => s.kelas === window.currentUserLinked).map(s => s.name);
-                filteredList = filteredList.filter(item => siswaDiKelas.includes(item.siswa));
-            } else if (window.currentUserRole === 'OrangTua' && window.currentUserLinked !== 'ALL') {
-                filteredList = filteredList.filter(item => item.siswa.toLowerCase().includes(window.currentUserLinked.toLowerCase()));
-            }
-
-            let totalZiyadah = 0;
-            let totalMurajaah = 0;
-            let juzCounts = { '1': 0, '29': 0, '30': 0 };
-            
-            filteredList.forEach(data => {
-                if (data.jenis === 'Ziyadah') totalZiyadah++;
-                if (data.jenis === 'Murajaah') totalMurajaah++;
-                let juzKey = String(data.juz);
-                juzCounts[juzKey] = (juzCounts[juzKey] || 0) + 1;
-            });
-
-            document.getElementById('stat-total-setoran').innerText = filteredList.length;
-            document.getElementById('stat-ziyadah').innerText = totalZiyadah;
-            document.getElementById('stat-murajaah').innerText = totalMurajaah;
-            updateCharts(juzCounts, totalZiyadah, totalMurajaah);
-            renderRecentTable(filteredList);
-        };
-
-        window.renderRecentTable = function(list) {
-            const tbody = document.getElementById('recent-setoran-table');
-            if(!tbody) return;
-            if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data setoran.</td></tr>'; return; }
-            tbody.innerHTML = list.slice(0, 5).map(item => `
-                <tr class="hover:bg-slate-50">
-                    <td class="py-3 px-4 text-slate-500">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
-                    <td class="py-3 px-4 font-bold text-slate-800">${item.siswa}</td>
-                    <td class="py-3 px-4">${item.surah} (Ayat ${item.ayatMulai}-${item.ayatSelesai})</td>
-                    <td class="py-3 px-4">Juz ${item.juz}</td>
-                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${item.jenis}</span></td>
-                    <td class="py-3 px-4 font-semibold text-emerald-600">${item.kualitas}</td>
-                    <td class="py-3 px-4 text-slate-500">${item.penguji}</td>
-                </tr>
-            `).join('');
-        };
-
-		window.currentActiveHalaqahId = null;
-
-        window.openAturAnggotaModal = function(halaqahId, halaqahName, capacity) {
-            window.currentActiveHalaqahId = halaqahId;
-            document.getElementById('modal-anggota-title').innerText = `Atur Anggota: ${halaqahName}`;
-            document.getElementById('anggota-halaqah-modal').classList.remove('hidden');
-
-            // Populate filter kelas dropdown
-            const classSelect = document.getElementById('filter-kelas-halaqah');
-            const uniqueClasses = [...new Set((window.allStudentsData || []).map(s => s.kelas))].filter(Boolean);
-            classSelect.innerHTML = '<option value="">Semua Kelas</option>' + uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
-
-            renderSantriHalaqahList();
-        };
-
-        window.renderSantriHalaqahList = function() {
-            const tbody = document.getElementById('santri-halaqah-tbody');
-            if(!tbody) return;
-
-            const searchKey = document.getElementById('search-santri-halaqah').value.toLowerCase();
-            const classKey = document.getElementById('filter-kelas-halaqah').value;
-
-            let students = window.allStudentsData || [];
-            if(searchKey) {
-                students = students.filter(s => (s.name && s.name.toLowerCase().includes(searchKey)) || (s.nis && s.nis.toLowerCase().includes(searchKey)));
-            }
-            if(classKey) {
-                students = students.filter(s => s.kelas === classKey);
-            }
-
-            if(students.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">Tidak ada data siswa.</td></tr>';
-                return;
-            }
-
-            // Hitung jumlah yang terpilih
-            let selectedCount = 0;
-
-            tbody.innerHTML = students.map(s => {
-                const isSelected = s.idHalaqah === window.currentActiveHalaqahId;
-                if(isSelected) selectedCount++;
-
-                let statusBadge = '<span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-semibold">Belum Masuk Kelompok</span>';
-                if(s.idHalaqah && s.idHalaqah !== window.currentActiveHalaqahId) {
-                    const hObj = (window.allHalaqahData || []).find(h => h.id === s.idHalaqah || h.idHalaqah === s.idHalaqah);
-                    const hName = hObj ? hObj.name : 'Kelompok Lain';
-                    statusBadge = `<span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-semibold">Di ${hName}</span>`;
-                } else if(isSelected) {
-                    statusBadge = '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-semibold">Anggota Kelompok Ini</span>';
-                }
-
-                return `
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-3 text-center">
-                            <input type="checkbox" value="${s.id}" ${isSelected ? 'checked' : ''} class="santri-checkbox w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500" onchange="updateKuotaHalaqahBadge()">
-                        </td>
-                        <td class="p-3 font-mono">${s.nis || '-'}</td>
-                        <td class="p-3 font-bold text-slate-800">${s.name}</td>
-                        <td class="p-3">${s.kelas || '-'}</td>
-                        <td class="p-3">${s.target || 'Juz 30'}</td>
-                        <td class="p-3">${statusBadge}</td>
-                    </tr>
-                `;
-            }).join('');
-
-            updateKuotaHalaqahBadge();
-        };
-
-        window.filterSantriHalaqahModal = function() {
-            renderSantriHalaqahList();
-        };
-
-        window.updateKuotaHalaqahBadge = function() {
-            const checkboxes = document.querySelectorAll('.santri-checkbox:checked');
-            const count = checkboxes.length;
-            const hObj = (window.allHalaqahData || []).find(h => h.id === window.currentActiveHalaqahId || h.idHalaqah === window.currentActiveHalaqahId);
-            const capacity = hObj ? Number(hObj.capacity) || 15 : 15;
-
-            const badge = document.getElementById('badge-kuota-halaqah');
-            if(badge) {
-                badge.innerText = `${count} / ${capacity} Siswa`;
-                if(count > capacity) {
-                    badge.className = 'px-3 py-1 bg-rose-100 text-rose-700 font-bold rounded-lg';
-                } else {
-                    badge.className = 'px-3 py-1 bg-blue-100 text-blue-700 font-bold rounded-lg';
-                }
-            }
-        };
-
-        window.saveAnggotaHalaqah = async function() {
-            const checkboxes = document.querySelectorAll('.santri-checkbox');
-            try {
-                for(let cb of checkboxes) {
-                    const studentId = cb.value;
-                    const isChecked = cb.checked;
-                    const studentDocRef = doc(db, "students", studentId);
-                    
-                    if(isChecked) {
-                        // Set idHalaqah ke siswa ini
-                        await updateDoc(studentDocRef, { idHalaqah: window.currentActiveHalaqahId });
-                    } else {
-                        // Jika tadinya kelompok ini tapi di-uncheck, kosongkan idHalaqah
-                        const studentObj = (window.allStudentsData || []).find(s => s.id === studentId);
-                        if(studentObj && studentObj.idHalaqah === window.currentActiveHalaqahId) {
-                            await updateDoc(studentDocRef, { idHalaqah: "" });
-                        }
-                    }
-                }
-                alert("Anggota halaqah berhasil diperbarui!");
-                closeModal('anggota-halaqah-modal');
-            } catch(err) {
-                alert("Gagal menyimpan anggota: " + err.message);
-            }
-        };
-		
-		
-        window.renderAllTable = function(list) {
-            const tbody = document.getElementById('all-mutabaah-table');
-            if(!tbody) return;
-            if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data mutabaah.</td></tr>'; return; }
-            tbody.innerHTML = list.map(item => `
-                <tr class="hover:bg-slate-50">
-                    <td class="py-3 px-4 text-slate-500">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
-                    <td class="py-3 px-4 font-bold text-slate-800">${item.siswa}</td>
-                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${item.jenis}</span></td>
-                    <td class="py-3 px-4">${item.surah} (Ayat ${item.ayatMulai}-${item.ayatSelesai})</td>
-                    <td class="py-3 px-4">Juz ${item.juz}</td>
-                    <td class="py-3 px-4 font-semibold text-emerald-600">${item.kualitas}</td>
-                    <td class="py-3 px-4 text-slate-500">${item.penguji}</td>
-                </tr>
-            `).join('');
-        };
-
-        // Firestore Listeners
-        onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap) => {
-            updateFirebaseConnectedStatus();
-            window.allSetoranData = [];
-            snap.forEach(d => window.allSetoranData.push({ id: d.id, ...d.data() }));
-            applyFilters();
-        }, handleFirestoreError);
-
-        onSnapshot(query(collection(db, "students")), (snap) => {
-        onSnapshot(query(collection(db, "students")), (snap) => {
-            updateFirebaseConnectedStatus();
-            window.allStudentsData = [];
-            snap.forEach(d => window.allStudentsData.push({ id: d.id, ...d.data() }));
-            
-            let activeStudents = window.allStudentsData;
-            
-            // Jika login sebagai Guru Tahfiz, filter khusus siswa di kelompok halaqahnya
-            if (window.currentUserRole && window.currentUserRole !== 'Admin') {
-                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
-                    (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
-                    h.id === window.currentUserLinked
-                );
-                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
-                activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
-            }
-
-            const statTotalSiswa = document.getElementById('stat-total-siswa');
-            if (statTotalSiswa) {
-                statTotalSiswa.innerText = activeStudents.length;
-            }
-
-            renderStudentsTable(window.allStudentsData);
-            renderPromotionTable(window.allStudentsData);
-            populateStudentDropdowns(activeStudents);
-        }, handleFirestoreError);
-
-        window.allKelasData = [];
-
-        onSnapshot(query(collection(db, "kelas")), (snap) => {
-            const tbody = document.getElementById('kelas-table-body');
-            window.allKelasData = [];
-            snap.forEach(d => window.allKelasData.push({ id: d.id, ...d.data() }));
-            
-            // 1. Render tabel kelas jika berada di halaman Kelola Kelas
-            if(tbody) {
-                if(window.allKelasData.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data kelas.</td></tr>';
-                } else {
-                    const countMap = {};
-                    if(window.allStudentsData) {
-                        window.allStudentsData.forEach(s => {
-                            if(s.kelas) countMap[s.kelas] = (countMap[s.kelas] || 0) + 1;
-                        });
-                    }
-
-                    tbody.innerHTML = window.allKelasData.map(k => `
-                        <tr class="hover:bg-slate-50">
-                            <td class="py-3 px-4 font-mono font-semibold">${k.idKelas || 'KLS-' + Math.floor(100+Math.random()*900)}</td>
-                            <td class="py-3 px-4 font-bold text-slate-800">${k.name}</td>
-                            <td class="py-3 px-4">${k.tingkat || 'Kelas 7'}</td>
-                            <td class="py-3 px-4">${k.teacher || '-'}</td>
-                            <td class="py-3 px-4">${countMap[k.name] || 0} Siswa</td>
-                            <td class="py-3 px-4 text-center space-x-2">
-                                <button onclick="deleteKelas('${k.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
-                    `).join('');
-                }
-            }
-            
-            // 2. Isi otomatis dropdown pilihan kelas di Modal Tambah/Edit Siswa
-            const studentClassSelect = document.getElementById('modal-student-class');
-            if(studentClassSelect) {
-                studentClassSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>' + 
-                    window.allKelasData.map(c => `<option value="${c.name}">${c.name} (Wali: ${c.teacher})</option>`).join('');
-            }
-
-            // 3. Isi otomatis dropdown kelas bimbingan di Modal Guru
-            const linkedSelect = document.getElementById('modal-guru-linked');
-            if(linkedSelect) {
-                linkedSelect.innerHTML = '<option value="ALL">Semua Kelas (ALL / Lintas Kelas)</option>' + 
-                    window.allKelasData.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-            }
-        }, handleFirestoreError);
-
-        onSnapshot(query(collection(db, "accounts")), (snap) => {
-            updateFirebaseConnectedStatus();
-            window.allAccountsData = [];
-            snap.forEach(d => window.allAccountsData.push({ id: d.id, ...d.data() }));
-            if(window.allAccountsData.length === 0) {
-                addDoc(collection(db, "accounts"), { userId: "U001", username: "admin", name: "Administrator Utama", role: "Admin", linked: "ALL", password: "admin" }).catch(err => console.log(err));
-            }
-            renderAccountsTable(window.allAccountsData);
-            
-            // Guru table render
-            const tbody = document.getElementById('guru-table-body');
-            if(tbody) {
-                const gurus = window.allAccountsData.filter(acc => acc.role === 'GuruTahfiz' || acc.role === 'Admin');
-                if(gurus.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data guru penguji.</td></tr>';
-                } else {
-                    tbody.innerHTML = gurus.map(g => `
-                        <tr class="hover:bg-slate-50">
-                            <td class="py-3 px-4 font-mono font-semibold">${g.userId || 'G' + Math.floor(1000+Math.random()*9000)}</td>
-                            <td class="py-3 px-4 font-bold text-slate-800">${g.name}</td>
-                            <td class="py-3 px-4 font-mono">${g.username}</td>
-                            <td class="py-3 px-4 font-mono">********</td>
-                            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-semibold">${g.linked || 'ALL'}</span></td>
-                            <td class="py-3 px-4 text-center space-x-2">
-                                <button onclick="deleteGuru('${g.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
-                    `).join('');
-                }
-            }
-
-            // Populate teacher dropdown for halaqah
-            const selectTeacher = document.getElementById('modal-halaqah-teacher');
-            if(selectTeacher) {
-                const teachers = window.allAccountsData.filter(acc => acc.role === 'GuruTahfiz' || acc.role === 'Admin');
-                selectTeacher.innerHTML = '<option value="">-- Pilih Guru --</option>' + teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-            }
-        }, handleFirestoreError);
-
-        onSnapshot(query(collection(db, "halaqah")), (snap) => {
-            window.allHalaqahData = [];
-            snap.forEach(d => window.allHalaqahData.push({ id: d.id, ...d.data() }));
-            renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
-        }, handleFirestoreError);
-
-        window.renderHalaqahTable = function(halaqahList, studentsList) {
-            const tbody = document.getElementById('halaqah-table-body');
-            if(!tbody) return;
-            if(halaqahList.length === 0) { 
-                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada kelompok halaqah.</td></tr>'; 
-                return; 
-            }
-
-            const countMap = {};
-            studentsList.forEach(s => {
-                if(s.idHalaqah) countMap[s.idHalaqah] = (countMap[s.idHalaqah] || 0) + 1;
-            });
-
-            tbody.innerHTML = halaqahList.map(h => {
-                const terisi = countMap[h.id || h.idHalaqah] || 0;
-                const kapasitas = Number(h.capacity) || 15;
-                const persen = Math.round((terisi / kapasitas) * 100);
-                let badgeBg = 'bg-emerald-100 text-emerald-700';
-                if(terisi > kapasitas) badgeBg = 'bg-rose-100 text-rose-700';
-
-                return `
-                    <tr class="hover:bg-slate-50">
-                        <td class="py-3 px-4 font-mono font-semibold">${h.idHalaqah || h.id || '-'}</td>
-                        <td class="py-3 px-4 font-bold text-slate-800">${h.name}</td>
-                        <td class="py-3 px-4">${h.teacher}</td>
-                        <td class="py-3 px-4">${kapasitas} Siswa</td>
-                        <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full font-semibold ${badgeBg}">${terisi} Siswa (${persen}%)</span></td>
-                        <td class="py-3 px-4 text-center space-x-2">
-                           <button onclick="openAturAnggotaModal('${h.id}', '${h.name}', '${h.capacity}')" class="px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded font-semibold">
-    <i class="fa-solid fa-users-gear mr-1"></i> Atur Anggota
-</button>
-
-						   <button onclick="deleteHalaqah('${h.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        };
-		
-		window.parsedExcelRows = [];
-
-        window.handleExcelImport = function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const data = new Uint8Array(evt.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const rows = XLSX.utils.sheet_to_json(worksheet);
-                    
-                    if (rows.length === 0) {
-                        alert("File Excel kosong atau format tidak sesuai!");
-                        e.target.value = '';
-                        return;
-                    }
-
-                    window.parsedExcelRows = rows;
-                    
-                    // Tampilkan pratinjau ke modal
-                    document.getElementById('import-preview-info').innerText = `Ditemukan ${rows.length} data siswa dalam file Excel.`;
-                    const tbody = document.getElementById('import-preview-tbody');
-                    tbody.innerHTML = rows.slice(0, 5).map(r => `
-                        <tr>
-                            <td class="p-2 font-mono">${r.NIS || r.nis || '-'}</td>
-                            <td class="p-2 font-bold">${r['Nama Siswa'] || r.Nama || r.nama || '-'}</td>
-                            <td class="p-2">${r.Kelas || r.kelas || '-'}</td>
-                            <td class="p-2">${r['Nama Wali Siswa'] || r.Wali || '-'}</td>
-                        </tr>
-                    `).join('') + (rows.length > 5 ? `<tr><td colspan="4" class="p-2 text-center text-slate-400">... dan ${rows.length - 5} data lainnya.</td></tr>` : '');
-
-                    e.target.value = '';
-                    document.getElementById('import-preview-modal').classList.remove('hidden');
-                } catch (err) {
-                    alert("Gagal membaca file Excel: " + err.message);
-                    e.target.value = '';
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        };
-
-        window.confirmAndSaveExcelImport = async function() {
-            const rows = window.parsedExcelRows;
-            if (!rows || rows.length === 0) {
-                closeModal('import-preview-modal');
-                return;
-            }
-
-            try {
-                let count = 0;
-                for (let row of rows) {
-                    const nis = String(row.NIS || row.nis || row.Nim || row.nim || '');
-                    const name = String(row['Nama Siswa'] || row.Nama || row.nama || row.Siswa || '');
-                    const kelas = String(row.Kelas || row.kelas || '');
-                    const target = String(row['Target Juz'] || row.Target || row.target || 'Juz 30');
-                    const guardian = String(row['Nama Wali Siswa'] || row['Nama Wali'] || row.Wali || row.wali || '');
-                    let phone = String(row['No. Kontak'] || row['No Kontak'] || row.Telepon || row.HP || row.Wa || row.wa || '');
-                    if (phone.startsWith('8')) phone = '0' + phone;
-
-                    if (name) {
-                        await addDoc(collection(db, "students"), {
-                            nis: nis || '-',
-                            name: name,
-                            kelas: kelas || '-',
-                            target: target || 'Juz 30',
-                            guardian: guardian || '-',
-                            phone: phone || '-'
-                        });
-                        count++;
-                    }
-                }
-                closeModal('import-preview-modal');
-                alert(`Berhasil mengimpor ${count} data siswa ke database!`);
-                window.parsedExcelRows = [];
-            } catch (err) {
-                alert("Gagal menyimpan data ke database: " + err.message);
-            }
-        };
-		
-        // Modal Handlers & Actions
-        window.openKelasModal = function() {
-            const modal = document.getElementById('kelas-modal');
-            if (modal) { modal.classList.remove('hidden'); document.getElementById('kelas-form')?.reset(); }
-        };
-
-        window.openGuruModal = function() {
-            const modal = document.getElementById('guru-modal');
-            if (modal) { modal.classList.remove('hidden'); document.getElementById('guru-form')?.reset(); }
-        };
-
-        window.openHalaqahModal = function() {
-            const modal = document.getElementById('halaqah-modal');
-            if (modal) { modal.classList.remove('hidden'); document.getElementById('halaqah-form')?.reset(); }
-        };
-
-        window.saveKelas = async function(e) {
-            e.preventDefault();
-            const name = document.getElementById('modal-kelas-name').value;
-            const tingkat = document.getElementById('modal-kelas-tingkat').value;
-            const teacher = document.getElementById('modal-kelas-teacher').value;
-            const idKelas = 'KLS-' + Math.floor(1000 + Math.random() * 9000);
-            try {
-                await addDoc(collection(db, "kelas"), { idKelas, name, tingkat, teacher });
-                alert("Kelas baru berhasil ditambahkan!");
-                closeModal('kelas-modal');
-            } catch(err) { alert("Gagal: " + err.message); }
-        };
-
-        window.deleteKelas = async function(id) {
-            if(confirm("Hapus kelas ini?")) await deleteDoc(doc(db, "kelas", id));
-        };
-
-        window.saveGuru = async function(e) {
-            e.preventDefault();
-            const name = document.getElementById('modal-guru-name').value;
-            const username = document.getElementById('modal-guru-username').value;
-            const password = document.getElementById('modal-guru-password').value;
-            const linked = document.getElementById('modal-guru-linked').value;
-            const userId = "G" + Math.floor(1000 + Math.random() * 9000);
-
-            try {
-                await addDoc(collection(db, "accounts"), { userId, username, password, name, role: "GuruTahfiz", linked });
-                alert("Guru penguji baru berhasil didaftarkan!");
-                closeModal('guru-modal');
-            } catch(err) { alert("Gagal: " + err.message); }
-        };
-
-        window.deleteGuru = async function(id) {
-            if(confirm("Hapus akun guru ini?")) await deleteDoc(doc(db, "accounts", id));
-        };
-
-        window.saveHalaqah = async function(e) {
-            e.preventDefault();
-            const name = document.getElementById('modal-halaqah-name').value;
-            const teacher = document.getElementById('modal-halaqah-teacher').value;
-            const capacity = document.getElementById('modal-halaqah-capacity').value;
-            const idHalaqah = 'HLQ-' + Math.floor(1000 + Math.random() * 9000);
-
-            try {
-                await addDoc(collection(db, "halaqah"), { idHalaqah, name, teacher, capacity });
-                alert("Kelompok halaqah berhasil dibuat!");
-                closeModal('halaqah-modal');
-            } catch(err) { alert("Gagal membuat halaqah: " + err.message); }
-        };
-
-        window.deleteHalaqah = async function(id) {
-            if(confirm("Hapus kelompok halaqah ini?")) await deleteDoc(doc(db, "halaqah", id));
-        };
-
-        window.applyFilters = function() {
-            let filtered = [...window.allSetoranData];
-            const periode = document.getElementById('filter-periode').value;
-            const startDate = document.getElementById('filter-start-date').value;
-            const endDate = document.getElementById('filter-end-date').value;
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            if (periode === 'hari-ini') filtered = filtered.filter(item => item.timestamp && item.timestamp.startsWith(todayStr));
-            else if (periode === 'bulan-ini') {
-                const currentMonth = todayStr.substring(0, 7);
-                filtered = filtered.filter(item => item.timestamp && item.timestamp.startsWith(currentMonth));
-            }
-            if (startDate) filtered = filtered.filter(item => item.timestamp && item.timestamp.split('T')[0] >= startDate);
-            if (endDate) filtered = filtered.filter(item => item.timestamp && item.timestamp.split('T')[0] <= endDate);
-
-            updateDashboardStatsAndCharts(filtered);
-            window.currentFilteredMutabaah = filtered;
-            renderAllTable(filtered);
-        };
-
-        window.resetFilters = function() {
-            document.getElementById('filter-periode').value = 'semua';
-            document.getElementById('filter-start-date').value = '';
-            document.getElementById('filter-end-date').value = '';
-            applyFilters();
-        };
-
-        window.submitSetoran = async function(e) {
-            e.preventDefault();
-            const data = {
-                siswa: document.getElementById('input-siswa').value,
-                jenis: document.getElementById('input-jenis').value,
-                surah: document.getElementById('input-surah').value,
-                juz: document.getElementById('input-juz').value,
-                ayatMulai: document.getElementById('input-ayat-mulai').value,
-                ayatSelesai: document.getElementById('input-ayat-selesai').value,
-                kualitas: document.getElementById('input-kualitas').value,
-                catatan: document.getElementById('input-catatan').value,
-                penguji: window.currentUser || 'Admin',
-                timestamp: new Date().toISOString()
-            };
-            try {
-                await addDoc(collection(db, "setoran"), data);
-                alert("Setoran berhasil disimpan!");
-                document.getElementById('setoran-form').reset();
-                switchTab('dashboard');
-            } catch (err) { alert("Gagal: " + err.message); }
-        };
-
-        window.saveStudent = async function(e) {
-            e.preventDefault();
-            const id = document.getElementById('student-id').value;
-            const nis = document.getElementById('modal-student-nis').value;
-            const name = document.getElementById('modal-student-name').value;
-            const kelas = document.getElementById('modal-student-class').value;
-            const target = document.getElementById('modal-student-target').value;
-            const guardian = document.getElementById('modal-student-guardian').value;
-            let phone = document.getElementById('modal-student-phone').value.trim();
-            if (phone.startsWith('8')) phone = '0' + phone;
-
-            try {
-                if (id) {
-                    await updateDoc(doc(db, "students", id), { nis, name, kelas, target, guardian, phone });
-                    alert("Data siswa berhasil diperbarui!");
-                } else {
-                    await addDoc(collection(db, "students"), { nis, name, kelas, target, guardian, phone });
-                    alert("Siswa baru berhasil ditambahkan!");
-                }
-                closeModal('student-modal');
-            } catch(err) { alert("Gagal menyimpan siswa: " + err.message); }
-        };
-
-        window.deleteStudent = async function(id) {
-            if(confirm("Hapus siswa ini?")) await deleteDoc(doc(db, "students", id));
-        };
-
-        window.saveAccount = async function(e) {
-            e.preventDefault();
-            const id = document.getElementById('account-id').value;
-            const role = document.getElementById('modal-account-role').value;
-            const name = document.getElementById('modal-account-name').value;
-            const username = document.getElementById('modal-account-username').value;
-            const password = document.getElementById('modal-account-password').value;
-            const linked = document.getElementById('modal-account-linked').value || 'ALL';
-
-            try {
-                if (id) {
-                    await updateDoc(doc(db, "accounts", id), { role, name, username, password, linked });
-                    alert("Akun berhasil diperbarui!");
-                } else {
-                    const userId = "U" + Math.floor(1000 + Math.random() * 9000);
-                    await addDoc(collection(db, "accounts"), { userId, username, name, role, linked, password });
-                    alert("Akun baru berhasil ditambahkan!");
-                }
-                closeModal('account-modal');
-            } catch(err) { alert("Gagal: " + err.message); }
-        };
-
-        window.deleteAccount = async function(id) {
-            if(confirm("Hapus akun ini?")) await deleteDoc(doc(db, "accounts", id));
-        };
-    </script>
 
     <script>
 	
@@ -1644,8 +839,6 @@
             }
         };
 	
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
         
 
         window.applyRoleBasedSidebar = function(role) {
@@ -1826,5 +1019,439 @@
             });
         };
     </script>
+	
+	<!-- SCRIPTS -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        window.currentUser = null;
+        window.currentUserRole = 'Admin';
+        window.currentUserLinked = 'ALL';
+        window.currentUserName = 'Administrator';
+        window.currentFilteredMutabaah = [];
+        window.allAccountsData = [];
+        window.allSetoranData = [];
+        window.allStudentsData = [];
+        window.allKelasData = [];
+        window.allHalaqahData = [];
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyADdAnrvYRIAmErxGk40rNokK1eLo5RaAk",
+            authDomain: "portal-tahfiz-sekolah.firebaseapp.com",
+            projectId: "portal-tahfiz-sekolah",
+            storageBucket: "portal-tahfiz-sekolah.firebasestorage.app",
+            messagingSenderId: "726662973703",
+            appId: "1:726662973703:web:6c8ad8af1f2448e43adda2",
+            measurementId: "G-2H9C6QLVST"
+        };
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            window.db = db;
+            document.getElementById('firebase-status').innerText = 'Firebase Terhubung';
+            document.getElementById('firebase-status').className = 'text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium';
+        } catch (err) {
+            console.error("Firebase Init Error:", err);
+        }
+
+        const updateFirebaseConnectedStatus = () => {
+            const statusEl = document.getElementById('firebase-status');
+            if(statusEl) {
+                statusEl.innerText = 'Firebase Terhubung';
+                statusEl.className = 'text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium';
+            }
+        };
+
+        const handleFirestoreError = (err) => {
+            console.error("Firestore Error:", err);
+        };
+
+        // Fungsi Login Utama yang Aman & Cepat
+        window.handleLogin = function(e) {
+            e.preventDefault();
+            const uInput = document.getElementById('login-username').value.trim().toLowerCase();
+            const pInput = document.getElementById('login-password').value.trim();
+
+            if (uInput === 'admin' && pInput === 'admin') {
+                window.currentUser = 'Administrator Utama';
+                window.currentUserRole = 'Admin';
+                window.currentUserLinked = 'ALL';
+                window.currentUserName = 'Administrator';
+                
+                document.getElementById('user-display-name').innerText = 'ADMINISTRATOR';
+                document.getElementById('user-role').innerText = 'Administrator';
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+
+                applyRoleBasedSidebar('Admin');
+                switchTab('dashboard');
+                if(window.allStudentsData) {
+                    document.getElementById('stat-total-siswa').innerText = window.allStudentsData.length;
+                    renderStudentsTable(window.allStudentsData);
+                }
+                return;
+            }
+
+            if (!window.allAccountsData || window.allAccountsData.length === 0) {
+                alert("Data akun sedang disinkronisasi. Mohon tunggu 2 detik lalu klik Login kembali.");
+                return;
+            }
+
+            const matchedAccount = window.allAccountsData.find(acc => {
+                const dbUser = acc.username ? String(acc.username).trim().toLowerCase() : '';
+                const dbPass = acc.password ? String(acc.password).trim() : '';
+                return dbUser === uInput && dbPass === pInput;
+            });
+
+            if (matchedAccount) {
+                window.currentUserRole = matchedAccount.role;
+                window.currentUserLinked = matchedAccount.linked || 'ALL';
+                window.currentUser = matchedAccount.name;
+                window.currentUserName = matchedAccount.name;
+
+                document.getElementById('user-display-name').innerText = matchedAccount.name.toUpperCase();
+                document.getElementById('user-role').innerText = formatRoleName(matchedAccount.role);
+                
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+
+                window.applyRoleBasedSidebar(matchedAccount.role);
+                switchTab('dashboard');
+
+                if(window.allStudentsData) {
+                    let activeStudents = window.allStudentsData;
+                    if (window.currentUserRole !== 'Admin') {
+                        const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                            (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
+                            h.id === window.currentUserLinked
+                        );
+                        const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                        activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
+                    }
+                    const statTotalSiswa = document.getElementById('stat-total-siswa');
+                    if(statTotalSiswa) statTotalSiswa.innerText = activeStudents.length;
+                    updateDashboardStatsAndCharts(window.allSetoranData || []);
+                }
+            } else {
+                alert("Username atau Password salah!");
+            }
+        };
+
+        window.applyRoleBasedSidebar = function(role) {
+            const allNavs = [
+                'nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 
+                'nav-kelola-halaqah', 'nav-kelola-kelas', 'nav-kelola-guru', 
+                'nav-kelola-siswa', 'nav-kenaikan-kelulusan', 'nav-kelola-akun', 
+                'nav-monev-eksekutif', 'nav-ganti-password'
+            ];
+
+            allNavs.forEach(navId => {
+                const el = document.getElementById(navId);
+                if(el) {
+                    el.classList.add('hidden');
+                    el.style.display = 'none';
+                }
+            });
+
+            const r = role ? role.toLowerCase().trim() : '';
+            let allowedNavs = [];
+            if (r === 'admin' || r.includes('administrator')) {
+                allowedNavs = allNavs;
+            } else if (r.includes('guru') || r.includes('tahfiz') || r.includes('penguji')) {
+                allowedNavs = ['nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 'nav-ganti-password'];
+            } else if (r.includes('walikelas') || r.includes('wali kelas')) {
+                allowedNavs = ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'];
+            } else if (r.includes('kepalasekolah') || r.includes('kepala sekolah')) {
+                allowedNavs = ['nav-dashboard', 'nav-data-mutabaah', 'nav-monev-eksekutif', 'nav-ganti-password'];
+            } else if (r.includes('orangtua') || r.includes('walimurid')) {
+                allowedNavs = ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'];
+            } else {
+                allowedNavs = ['nav-dashboard', 'nav-ganti-password'];
+            }
+
+            allowedNavs.forEach(navId => {
+                const el = document.getElementById(navId);
+                if(el) {
+                    el.classList.remove('hidden');
+                    el.style.display = 'flex';
+                }
+            });
+        };
+
+        window.formatRoleName = function(role) {
+            switch(role) {
+                case 'Admin': return 'Administrator';
+                case 'GuruTahfiz': return 'Guru Penguji Tahfiz';
+                case 'WaliKelas': return 'Wali Kelas';
+                case 'KepalaSekolah': return 'Kepala Sekolah';
+                case 'OrangTua': return 'Wali Murid / Orang Tua';
+                default: return role;
+            }
+        };
+
+        window.handleLogout = function() {
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('login-page').classList.remove('hidden');
+            document.getElementById('login-form').reset();
+        };
+
+        window.switchTab = function(tabId) {
+            ['dashboard', 'input-setoran', 'data-mutabaah', 'kelola-halaqah', 'kelola-kelas', 'kelola-guru', 'kelola-siswa', 'kenaikan-kelulusan', 'kelola-akun', 'monev-eksekutif', 'ganti-password'].forEach(t => {
+                const el = document.getElementById('tab-' + t);
+                if(el) el.classList.add('hidden');
+                const nav = document.getElementById('nav-' + t);
+                if(nav) nav.className = "flex items-center px-4 py-2.5 font-medium rounded-lg text-slate-300 hover:bg-slate-700/60 hover:text-white transition";
+            });
+            const target = document.getElementById('tab-' + tabId);
+            if(target) target.classList.remove('hidden');
+            const activeNav = document.getElementById('nav-' + tabId);
+            if(activeNav) activeNav.className = "flex items-center px-4 py-2.5 font-medium rounded-lg bg-emerald-600 text-white shadow-sm";
+            document.getElementById('page-title').innerText = tabId.replace('-', ' ').toUpperCase();
+        };
+
+        window.closeModal = function(id) { 
+            document.getElementById(id)?.classList.add('hidden'); 
+        };
+
+        window.toggleSidebar = function() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.toggle('hidden');
+        };
+
+        window.downloadExcelTemplate = function() {
+            const templateData = [
+                { "NIS": "1001", "Nama Siswa": "Ahmad Fulan", "Kelas": "VII-1", "Target Juz": "Juz 30", "Nama Wali Siswa": "Bapak Fulan", "No. Kontak": "081234567890" }
+            ];
+            const worksheet = XLSX.utils.json_to_sheet(templateData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Data Siswa");
+            const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            const dataBlob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+            const url = window.URL.createObjectURL(dataBlob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = 'template_import_siswa.xlsx';
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            window.URL.revokeObjectURL(url);
+        };
+
+        // Render Tables & Snapshots
+        window.renderStudentsTable = function(students) {
+            const tbody = document.getElementById('students-table-body');
+            if(!tbody) return;
+            if (students.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data siswa.</td></tr>'; return; }
+            tbody.innerHTML = students.map(s => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 font-mono font-semibold">${s.nis || '-'}</td>
+                    <td class="py-3 px-4 font-bold text-slate-800">${s.name}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${s.kelas || '-'}</span></td>
+                    <td class="py-3 px-4">${s.target || 'Juz 30'}</td>
+                    <td class="py-3 px-4">${s.guardian || '-'}</td>
+                    <td class="py-3 px-4"><a href="https://wa.me/${s.phone}" target="_blank" class="text-emerald-600 font-semibold hover:underline"><i class="fa-brands fa-whatsapp"></i> ${s.phone || '-'}</a></td>
+                    <td class="py-3 px-4 text-center space-x-2">
+                        <button onclick='openStudentModal("edit", ${JSON.stringify(s)})' class="text-blue-600 hover:underline"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteStudent('${s.id}')" class="text-red-600 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        window.renderAccountsTable = function(accounts) {
+            const tbody = document.getElementById('accounts-table-body');
+            if(!tbody) return;
+            if(accounts.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data akun.</td></tr>'; return; }
+            tbody.innerHTML = accounts.map(a => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 font-mono font-semibold">${a.userId || 'U000'}</td>
+                    <td class="py-3 px-4">${a.username}</td>
+                    <td class="py-3 px-4 font-bold">${a.name}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full font-semibold bg-blue-100 text-blue-700">${a.role}</span></td>
+                    <td class="py-3 px-4">${a.linked || 'ALL'}</td>
+                    <td class="py-3 px-4 text-center space-x-2">
+                        <button onclick='openAccountModal("edit", ${JSON.stringify(a)})' class="text-blue-600 hover:underline"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteAccount('${a.id}')" class="text-red-600 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        window.renderPromotionTable = function(students) {
+            const tbody = document.getElementById('promotion-table-body');
+            if(!tbody) return;
+            if(students.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-400">Belum ada data siswa.</td></tr>'; return; }
+            tbody.innerHTML = students.map(s => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 font-bold">${s.name}</td>
+                    <td class="py-3 px-4">${s.kelas || '-'}</td>
+                    <td class="py-3 px-4">3 Juz</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-semibold">Naik Tingkat</span></td>
+                    <td class="py-3 px-4 text-center"><button onclick="alert('Status diperbarui.')" class="bg-emerald-600 text-white px-2 py-1 rounded">Proses</button></td>
+                </tr>
+            `).join('');
+        };
+
+        window.populateStudentDropdowns = function(students) {
+            const select = document.getElementById('input-siswa');
+            if(select) select.innerHTML = '<option value="">-- Pilih Siswa --</option>' + students.map(s => `<option value="${s.name}">${s.name} (${s.kelas})</option>`).join('');
+        };
+
+        window.updateDashboardStatsAndCharts = function(list) {
+            let filteredList = [...list];
+            let totalZiyadah = 0;
+            let totalMurajaah = 0;
+            let juzCounts = { '1': 0, '29': 0, '30': 0 };
+            
+            filteredList.forEach(data => {
+                if (data.jenis === 'Ziyadah') totalZiyadah++;
+                if (data.jenis === 'Murajaah') totalMurajaah++;
+                let juzKey = String(data.juz);
+                juzCounts[juzKey] = (juzCounts[juzKey] || 0) + 1;
+            });
+
+            document.getElementById('stat-total-setoran').innerText = filteredList.length;
+            document.getElementById('stat-ziyadah').innerText = totalZiyadah;
+            document.getElementById('stat-murajaah').innerText = totalMurajaah;
+            updateCharts(juzCounts, totalZiyadah, totalMurajaah);
+            renderRecentTable(filteredList);
+        };
+
+        window.renderRecentTable = function(list) {
+            const tbody = document.getElementById('recent-setoran-table');
+            if(!tbody) return;
+            if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data setoran.</td></tr>'; return; }
+            tbody.innerHTML = list.slice(0, 5).map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 text-slate-500">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
+                    <td class="py-3 px-4 font-bold text-slate-800">${item.siswa}</td>
+                    <td class="py-3 px-4">${item.surah}</td>
+                    <td class="py-3 px-4">Juz ${item.juz}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${item.jenis}</span></td>
+                    <td class="py-3 px-4 font-semibold text-emerald-600">${item.kualitas}</td>
+                    <td class="py-3 px-4 text-slate-500">${item.penguji}</td>
+                </tr>
+            `).join('');
+        };
+
+        window.renderHalaqahTable = function(halaqahList, studentsList) {
+            const tbody = document.getElementById('halaqah-table-body');
+            if(!tbody) return;
+            const halaqahArr = halaqahList || window.allHalaqahData || [];
+            const studentsArr = studentsList || window.allStudentsData || [];
+
+            if(halaqahArr.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada kelompok halaqah.</td></tr>'; 
+                return; 
+            }
+
+            const countMap = {};
+            studentsArr.forEach(s => {
+                if(s.idHalaqah) countMap[s.idHalaqah] = (countMap[s.idHalaqah] || 0) + 1;
+            });
+
+            tbody.innerHTML = halaqahArr.map(h => {
+                const terisi = countMap[h.id || h.idHalaqah] || 0;
+                const kapasitas = Number(h.capacity) || 15;
+                const persen = Math.round((terisi / kapasitas) * 100);
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-3 px-4 font-mono font-semibold">${h.idHalaqah || h.id || '-'}</td>
+                        <td class="py-3 px-4 font-bold text-slate-800">${h.name || '-'}</td>
+                        <td class="py-3 px-4">${h.teacher || '-'}</td>
+                        <td class="py-3 px-4">${kapasitas} Siswa</td>
+                        <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-700">${terisi} Siswa (${persen}%)</span></td>
+                        <td class="py-3 px-4 text-center space-x-2">
+                           <button onclick="openAturAnggotaModal('${h.id}', '${h.name || ''}', '${h.capacity || 15}')" class="px-2.5 py-1 bg-blue-50 text-blue-600 rounded font-semibold"><i class="fa-solid fa-users-gear mr-1"></i> Atur Anggota</button>
+                           <button onclick="deleteHalaqah('${h.id}')" class="text-red-600 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        };
+
+        // Firestore Listeners
+        onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap) => {
+            updateFirebaseConnectedStatus();
+            window.allSetoranData = [];
+            snap.forEach(d => window.allSetoranData.push({ id: d.id, ...d.data() }));
+            applyFilters();
+        }, handleFirestoreError);
+
+        onSnapshot(query(collection(db, "students")), (snap) => {
+            updateFirebaseConnectedStatus();
+            window.allStudentsData = [];
+            snap.forEach(d => window.allStudentsData.push({ id: d.id, ...d.data() }));
+            
+            let activeStudents = window.allStudentsData;
+            if (window.currentUserRole && window.currentUserRole !== 'Admin') {
+                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                    (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
+                    h.id === window.currentUserLinked
+                );
+                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
+            }
+
+            const statTotalSiswa = document.getElementById('stat-total-siswa');
+            if (statTotalSiswa) statTotalSiswa.innerText = activeStudents.length;
+
+            renderStudentsTable(window.allStudentsData);
+            renderPromotionTable(window.allStudentsData);
+            populateStudentDropdowns(activeStudents);
+        }, handleFirestoreError);
+
+        onSnapshot(query(collection(db, "kelas")), (snap) => {
+            window.allKelasData = [];
+            snap.forEach(d => window.allKelasData.push({ id: d.id, ...d.data() }));
+            const studentClassSelect = document.getElementById('modal-student-class');
+            if(studentClassSelect) {
+                studentClassSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>' + 
+                    window.allKelasData.map(c => `<option value="${c.name}">${c.name} (Wali: ${c.teacher})</option>`).join('');
+            }
+        }, handleFirestoreError);
+
+        onSnapshot(query(collection(db, "accounts")), (snap) => {
+            window.allAccountsData = [];
+            snap.forEach(d => window.allAccountsData.push({ id: d.id, ...d.data() }));
+            renderAccountsTable(window.allAccountsData);
+        }, handleFirestoreError);
+
+        onSnapshot(query(collection(db, "halaqah")), (snap) => {
+            window.allHalaqahData = [];
+            snap.forEach(d => window.allHalaqahData.push({ id: d.id, ...d.data() }));
+            renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
+        }, handleFirestoreError);
+
+        let juzChartInstance = null;
+        let typeChartInstance = null;
+        window.updateCharts = function(juzCounts, ziyadah, murajaah) {
+            const ctxJuz = document.getElementById('juzChart').getContext('2d');
+            if(juzChartInstance) juzChartInstance.destroy();
+            juzChartInstance = new Chart(ctxJuz, {
+                type: 'bar',
+                data: {
+                    labels: ['Juz 1', 'Juz 29', 'Juz 30'],
+                    datasets: [{ label: 'Capaian Siswa', data: [juzCounts['1'] || 0, juzCounts['29'] || 0, juzCounts['30'] || 0], backgroundColor: '#1e293b', borderRadius: 6 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const ctxType = document.getElementById('typeChart').getContext('2d');
+            if(typeChartInstance) typeChartInstance.destroy();
+            typeChartInstance = new Chart(ctxType, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ziyadah', 'Murajaah'],
+                    datasets: [{ data: [ziyadah, murajaah], backgroundColor: ['#0ea5e9', '#10b981'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        };
+    </script>
+	
+	
 </body>
 </html>
