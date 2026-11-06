@@ -1063,6 +1063,44 @@
         window.allStudentsData = [];
         window.allKelasData = [];
         window.allHalaqahData = [];
+		
+		document.addEventListener('DOMContentLoaded', () => {
+    // Cek apakah ada sesi login yang tersimpan di browser
+    const savedRole = localStorage.getItem('tahfiz_role');
+    const savedUser = localStorage.getItem('tahfiz_user');
+    const savedName = localStorage.getItem('tahfiz_name');
+    const savedLinked = localStorage.getItem('tahfiz_linked');
+
+    if (savedRole && savedUser) {
+        // Pulihkan kembali variabel global sesi Anda
+        window.currentUserRole = savedRole;
+        window.currentUser = savedUser;
+        window.currentUserName = savedName;
+        window.currentUserLinked = savedLinked;
+
+        // Sembunyikan halaman login, tampilkan halaman utama aplikasi
+        const loginScreen = document.getElementById('login-screen'); // Sesuaikan ID elemen login Anda
+        const appScreen = document.getElementById('app-screen');   // Sesuaikan ID kontainer utama aplikasi
+        
+        if (loginScreen) loginScreen.classList.add('hidden');
+        if (appScreen) appScreen.classList.remove('hidden');
+
+        // Muat data awal dan sesuaikan dasbor berdasarkan role
+        if (typeof window.setupDashboardByRole === 'function') {
+            window.setupDashboardByRole();
+        }
+        if (typeof window.initSurahDropdown === 'function') {
+            window.initSurahDropdown();
+        }
+    } else {
+        const loginScreen = document.getElementById('login-screen');
+        const appScreen = document.getElementById('app-screen');
+        if (loginScreen) loginScreen.classList.remove('hidden');
+        if (appScreen) appScreen.classList.add('hidden');
+    }
+
+    // Pemanggilan inisialisasi lainnya yang sudah ada sebelumnya...
+});
 
         const firebaseConfig = {
             apiKey: "AIzaSyADdAnrvYRIAmErxGk40rNokK1eLo5RaAk",
@@ -1165,6 +1203,25 @@
             } else {
                 alert("Username atau Password salah!");
             }
+			
+			// Contoh di dalam fungsi penanganan login yang sudah ada:
+// ... (setelah verifikasi akun berhasil) ...
+
+window.currentUserRole = role; 
+window.currentUser = username; 
+window.currentUserName = fullName; 
+window.currentUserLinked = linkedId; 
+
+// SIMPAN KE LOCALSTORAGE DISINI:
+localStorage.setItem('tahfiz_role', role);
+localStorage.setItem('tahfiz_user', username);
+localStorage.setItem('tahfiz_name', fullName || username);
+localStorage.setItem('tahfiz_linked', linkedId || '');
+
+// ... (lanjutan kode untuk menyembunyikan form login & menampilkan dashboard) ...
+			
+			
+			
         };
 
         window.applyRoleBasedSidebar = function(role) {
@@ -1223,6 +1280,23 @@
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('login-page').classList.remove('hidden');
             document.getElementById('login-form').reset();
+			
+			window.logout = function() {
+    // Hapus seluruh data sesi dari localStorage
+    localStorage.removeItem('tahfiz_role');
+    localStorage.removeItem('tahfiz_user');
+    localStorage.removeItem('tahfiz_name');
+    localStorage.removeItem('tahfiz_linked');
+
+    // Reset variabel global
+    window.currentUserRole = null;
+    window.currentUser = null;
+
+    // Muat ulang halaman untuk kembali ke tampilan login
+    location.reload(); 
+};
+			
+			
         };
 
         window.switchTab = function(tabId) {
