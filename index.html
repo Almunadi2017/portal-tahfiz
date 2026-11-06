@@ -1222,6 +1222,33 @@ localStorage.setItem('tahfiz_name', fullName || username);
 localStorage.setItem('tahfiz_linked', linkedId || '');
 
 // ... (lanjutan kode untuk menyembunyikan form login & menampilkan dashboard) ...
+		// Contoh di dalam fungsi saat login Guru Tahfiz berhasil dicocokkan:
+        if (isGuruValid) {
+            // Variabel nama dan data guru yang berhasil login
+            const namaGuru = guruData.nama; 
+            const idHalaqahGuru = guruData.idHalaqah; 
+
+            window.currentUser = namaGuru;
+            window.currentUserRole = 'Guru Tahfiz';
+            window.currentUserName = namaGuru;
+            window.currentUserLinked = idHalaqahGuru;
+
+            // --- LETAKKAN KODE INI DI SINI ---
+            localStorage.setItem('tahfiz_role', 'Guru Tahfiz');
+            localStorage.setItem('tahfiz_user', namaGuru);
+            localStorage.setItem('tahfiz_name', namaGuru);
+            localStorage.setItem('tahfiz_linked', idHalaqahGuru);
+            // ---------------------------------
+
+            document.getElementById('user-display-name').innerText = namaGuru.toUpperCase();
+            document.getElementById('user-role').innerText = 'Guru Tahfiz';
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+
+            applyRoleBasedSidebar('Guru Tahfiz');
+            switchTab('dashboard');
+        }	
+			
 			
 			
 			
@@ -2046,25 +2073,44 @@ localStorage.setItem('tahfiz_linked', linkedId || '');
             const savedName = localStorage.getItem('tahfiz_name');
             const savedLinked = localStorage.getItem('tahfiz_linked');
 
+            const loginPage = document.getElementById('login-page');
+            const appContainer = document.getElementById('app-container');
+
             if (savedRole && savedUser) {
+                // Pulihkan variabel sesi global
                 window.currentUserRole = savedRole;
                 window.currentUser = savedUser;
                 window.currentUserName = savedName || savedUser;
                 window.currentUserLinked = savedLinked;
 
-                // Sembunyikan halaman login, tampilkan app-container
-                const loginPage = document.getElementById('login-page');
-                const appContainer = document.getElementById('app-container');
-
+                // Sembunyikan login, tampilkan aplikasi utama
                 if (loginPage) loginPage.classList.add('hidden');
                 if (appContainer) appContainer.classList.remove('hidden');
 
+                // Pulihkan teks nama & role di pojok kanan atas berdasarkan data yang tersimpan
+                const displayNameEl = document.getElementById('user-display-name');
+                const displayRoleEl = document.getElementById('user-role');
+                if (displayNameEl) displayNameEl.innerText = (savedName || savedUser).toUpperCase();
+                if (displayRoleEl) displayRoleEl.innerText = savedRole;
+
+                // Terapkan sidebar dan dasbor sesuai role (Admin / Guru Tahfiz)
+                if (typeof window.applyRoleBasedSidebar === 'function') {
+                    window.applyRoleBasedSidebar(savedRole);
+                }
                 if (typeof window.setupDashboardByRole === 'function') {
                     window.setupDashboardByRole();
                 }
                 if (typeof window.initSurahDropdown === 'function') {
                     window.initSurahDropdown();
                 }
+                
+                // Buka tab awal (dashboard)
+                if (typeof window.switchTab === 'function') {
+                    window.switchTab('dashboard');
+                }
+            } else {
+                if (loginPage) loginPage.classList.remove('hidden');
+                if (appContainer) appContainer.classList.add('hidden');
             }
         });
 		
