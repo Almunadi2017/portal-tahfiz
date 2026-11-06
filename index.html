@@ -1046,59 +1046,56 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
         };
-    <!-- SCRIPTS -->
+    </script>
+	
+	<!-- SCRIPTS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Inisialisasi Variabel Global Sesi
         window.currentUser = null;
-        window.currentUserRole = localStorage.getItem('tahfiz_role') || 'Admin';
-        window.currentUserLinked = localStorage.getItem('tahfiz_linked') || 'ALL';
-        window.currentUserName = localStorage.getItem('tahfiz_name') || 'Administrator';
+        window.currentUserRole = 'Admin';
+        window.currentUserLinked = 'ALL';
+        window.currentUserName = 'Administrator';
         window.currentFilteredMutabaah = [];
         window.allAccountsData = [];
         window.allSetoranData = [];
         window.allStudentsData = [];
         window.allKelasData = [];
         window.allHalaqahData = [];
-
-        // Pemulihan Sesi Saat Halaman Dimuat / Direfresh
-        document.addEventListener('DOMContentLoaded', () => {
+		
+		document.addEventListener('DOMContentLoaded', () => {
             const savedRole = localStorage.getItem('tahfiz_role');
             const savedUser = localStorage.getItem('tahfiz_user');
             const savedName = localStorage.getItem('tahfiz_name');
             const savedLinked = localStorage.getItem('tahfiz_linked');
 
-            const loginPage = document.getElementById('login-page');
-            const appContainer = document.getElementById('app-container');
+            // Ambil elemen pembungkus layar login dan aplikasi utama
+            const loginScreen = document.getElementById('login-screen'); // Sesuaikan ID form login Anda
+            const appScreen = document.getElementById('app-screen');     // Sesuaikan ID kontainer utama portal Anda
 
             if (savedRole && savedUser) {
+                // Pulihkan sesi
                 window.currentUserRole = savedRole;
                 window.currentUser = savedUser;
                 window.currentUserName = savedName || savedUser;
                 window.currentUserLinked = savedLinked;
 
-                if (loginPage) loginPage.classList.add('hidden');
-                if (appContainer) appContainer.classList.remove('hidden');
+                // Sembunyikan login, tampilkan aplikasi utama
+                if (loginScreen) loginScreen.classList.add('hidden');
+                if (appScreen) appScreen.classList.remove('hidden');
 
-                const displayNameEl = document.getElementById('user-display-name');
-                const displayRoleEl = document.getElementById('user-role');
-                if (displayNameEl) displayNameEl.innerText = window.currentUserName.toUpperCase();
-                if (displayRoleEl) displayRoleEl.innerText = window.currentUserRole;
-
-                if (typeof window.applyRoleBasedSidebar === 'function') {
-                    window.applyRoleBasedSidebar(window.currentUserRole);
-                }
+                // Sesuaikan dasbor dan dropdown
                 if (typeof window.setupDashboardByRole === 'function') {
                     window.setupDashboardByRole();
                 }
-                if (typeof window.switchTab === 'function') {
-                    window.switchTab('dashboard');
+                if (typeof window.initSurahDropdown === 'function') {
+                    window.initSurahDropdown();
                 }
             } else {
-                if (loginPage) loginPage.classList.remove('hidden');
-                if (appContainer) appContainer.classList.add('hidden');
+                // Jika belum login, pastikan tampilkan form login
+                if (loginScreen) loginScreen.classList.remove('hidden');
+                if (appScreen) appScreen.classList.add('hidden');
             }
         });
 
@@ -1116,11 +1113,8 @@
             const app = initializeApp(firebaseConfig);
             const db = getFirestore(app);
             window.db = db;
-            const statusEl = document.getElementById('firebase-status');
-            if(statusEl) {
-                statusEl.innerText = 'Firebase Terhubung';
-                statusEl.className = 'text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium';
-            }
+            document.getElementById('firebase-status').innerText = 'Firebase Terhubung';
+            document.getElementById('firebase-status').className = 'text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium';
         } catch (err) {
             console.error("Firebase Init Error:", err);
         }
@@ -1137,82 +1131,100 @@
             console.error("Firestore Error:", err);
         };
 
-        // Fungsi Login Utama yang Aman & Menyimpan Sesi ke LocalStorage
+        // Fungsi Login Utama yang Aman & Cepat
         window.handleLogin = function(e) {
             e.preventDefault();
-            
-            const usernameInput = document.getElementById('login-username');
-            const passwordInput = document.getElementById('login-password');
-            
-            if (!usernameInput || !passwordInput) return;
-            
-            const uInput = usernameInput.value.trim().toLowerCase();
-            const pInput = passwordInput.value.trim();
+            const uInput = document.getElementById('login-username').value.trim().toLowerCase();
+            const pInput = document.getElementById('login-password').value.trim();
 
-            // 1. Validasi Login Admin Utama
             if (uInput === 'admin' && pInput === 'admin') {
                 window.currentUser = 'Administrator Utama';
                 window.currentUserRole = 'Admin';
                 window.currentUserLinked = 'ALL';
                 window.currentUserName = 'Administrator';
-
+				
+				// --- SIMPAN SESI ADMIN KE LOCALSTORAGE ---
                 localStorage.setItem('tahfiz_role', 'Admin');
                 localStorage.setItem('tahfiz_user', 'Administrator Utama');
                 localStorage.setItem('tahfiz_name', 'Administrator');
                 localStorage.setItem('tahfiz_linked', 'ALL');
+                
+                document.getElementById('user-display-name').innerText = 'ADMINISTRATOR';
+                document.getElementById('user-role').innerText = 'Administrator';
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
 
-                const loginPage = document.getElementById('login-page');
-                const appContainer = document.getElementById('app-container');
-                if (loginPage) loginPage.classList.add('hidden');
-                if (appContainer) appContainer.classList.remove('hidden');
-
-                const displayName = document.getElementById('user-display-name');
-                const displayRole = document.getElementById('user-role');
-                if (displayName) displayName.innerText = 'ADMINISTRATOR';
-                if (displayRole) displayRole.innerText = 'Administrator';
-
-                if (typeof window.applyRoleBasedSidebar === 'function') window.applyRoleBasedSidebar('Admin');
-                if (typeof window.switchTab === 'function') window.switchTab('dashboard');
+                applyRoleBasedSidebar('Admin');
+                switchTab('dashboard');
+                if(window.allStudentsData) {
+                    document.getElementById('stat-total-siswa').innerText = window.allStudentsData.length;
+                    renderStudentsTable(window.allStudentsData);
+                }
                 return;
             }
 
-            // 2. Validasi Login Guru Tahfiz / Akun Lainnya dari Firestore
-            const matchedAccount = (window.allAccountsData || []).find(acc => 
-                (acc.username && acc.username.trim().toLowerCase() === uInput) && 
-                (acc.password && acc.password.trim() === pInput)
-            );
+            if (!window.allAccountsData || window.allAccountsData.length === 0) {
+                alert("Data akun sedang disinkronisasi. Mohon tunggu 2 detik lalu klik Login kembali.");
+                return;
+            }
+
+            const matchedAccount = window.allAccountsData.find(acc => {
+                const dbUser = acc.username ? String(acc.username).trim().toLowerCase() : '';
+                const dbPass = acc.password ? String(acc.password).trim() : '';
+                return dbUser === uInput && dbPass === pInput;
+            });
 
             if (matchedAccount) {
-                const namaGuru = matchedAccount.nama || matchedAccount.name || 'Guru Tahfiz';
-                const roleGuru = matchedAccount.role || 'Guru Tahfiz';
-                const linkedId = matchedAccount.idHalaqah || matchedAccount.halaqahId || '';
+                window.currentUserRole = matchedAccount.role;
+                window.currentUserLinked = matchedAccount.linked || 'ALL';
+                window.currentUser = matchedAccount.name;
+                window.currentUserName = matchedAccount.name;
 
-                window.currentUser = namaGuru;
-                window.currentUserRole = roleGuru;
-                window.currentUserName = namaGuru;
-                window.currentUserLinked = linkedId;
+                document.getElementById('user-display-name').innerText = matchedAccount.name.toUpperCase();
+                document.getElementById('user-role').innerText = formatRoleName(matchedAccount.role);
+                
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
 
-                localStorage.setItem('tahfiz_role', roleGuru);
-                localStorage.setItem('tahfiz_user', namaGuru);
-                localStorage.setItem('tahfiz_name', namaGuru);
-                localStorage.setItem('tahfiz_linked', linkedId);
+                window.applyRoleBasedSidebar(matchedAccount.role);
+                switchTab('dashboard');
 
-                const loginPage = document.getElementById('login-page');
-                const appContainer = document.getElementById('app-container');
-                if (loginPage) loginPage.classList.add('hidden');
-                if (appContainer) appContainer.classList.remove('hidden');
-
-                const displayName = document.getElementById('user-display-name');
-                const displayRole = document.getElementById('user-role');
-                if (displayName) displayName.innerText = namaGuru.toUpperCase();
-                if (displayRole) displayRole.innerText = roleGuru;
-
-                if (typeof window.applyRoleBasedSidebar === 'function') window.applyRoleBasedSidebar(roleGuru);
-                if (typeof window.setupDashboardByRole === 'function') window.setupDashboardByRole();
-                if (typeof window.switchTab === 'function') window.switchTab('dashboard');
+                if(window.allStudentsData) {
+                    let activeStudents = window.allStudentsData;
+                    if (window.currentUserRole !== 'Admin') {
+                        const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                            (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
+                            h.id === window.currentUserLinked
+                        );
+                        const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                        activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
+                    }
+                    const statTotalSiswa = document.getElementById('stat-total-siswa');
+                    if(statTotalSiswa) statTotalSiswa.innerText = activeStudents.length;
+                    updateDashboardStatsAndCharts(window.allSetoranData || []);
+                }
             } else {
-                alert('Username atau Password salah! Silakan periksa kembali.');
+                alert("Username atau Password salah!");
             }
+			
+			// Contoh di dalam fungsi penanganan login yang sudah ada:
+// ... (setelah verifikasi akun berhasil) ...
+
+window.currentUserRole = role; 
+window.currentUser = username; 
+window.currentUserName = fullName; 
+window.currentUserLinked = linkedId; 
+
+// SIMPAN KE LOCALSTORAGE DISINI:
+localStorage.setItem('tahfiz_role', role);
+localStorage.setItem('tahfiz_user', username);
+localStorage.setItem('tahfiz_name', fullName || username);
+localStorage.setItem('tahfiz_linked', linkedId || '');
+
+// ... (lanjutan kode untuk menyembunyikan form login & menampilkan dashboard) ...
+			
+			
+			
         };
 
         window.applyRoleBasedSidebar = function(role) {
@@ -1267,12 +1279,17 @@
             }
         };
 
-        // Fungsi Logout yang Membersihkan LocalStorage
-        window.logout = function() {
-            localStorage.clear();
-            window.currentUserRole = null;
-            window.currentUser = null;
+        window.handleLogout = function() {
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('login-page').classList.remove('hidden');
+            document.getElementById('login-form').reset();
+			
+		window.logout = function() {
+            localStorage.clear(); // Menghapus seluruh sesi tersimpan
             location.reload();
+        };
+			
+			
         };
 
         window.switchTab = function(tabId) {
@@ -1288,13 +1305,15 @@
             if(activeNav) activeNav.className = "flex items-center px-4 py-2.5 font-medium rounded-lg bg-emerald-600 text-white shadow-sm";
             document.getElementById('page-title').innerText = tabId.replace('-', ' ').toUpperCase();
 
+            // Jika tab yang dibuka adalah input setoran, muat ulang dropdown siswa khusus halaqahnya
             if (tabId === 'input-setoran') {
-                window.populateStudentDropdowns(window.allStudentsData);
-                window.initSurahDropdown();
-            }
-            if (tabId === 'dashboard') {
-                window.setupDashboardByRole();
-            }
+            window.populateStudentDropdowns(window.allStudentsData);
+            window.initSurahDropdown();
+        }
+		if (tabId === 'dashboard') {
+            window.setupDashboardByRole();
+        }
+		
         };
 
         window.closeModal = function(id) { 
@@ -1325,6 +1344,7 @@
             window.URL.revokeObjectURL(url);
         };
 
+        // Render Tables & Snapshots
         window.renderStudentsTable = function(students) {
             const tbody = document.getElementById('students-table-body');
             if(!tbody) return;
@@ -1344,7 +1364,7 @@
                 </tr>
             `).join('');
         };
-</script>
+
         window.renderAccountsTable = function(accounts) {
             const tbody = document.getElementById('accounts-table-body');
             if(!tbody) return;
@@ -1397,6 +1417,7 @@
             select.innerHTML = '<option value="">-- Pilih Siswa --</option>' + 
                 studentsList.map(s => `<option value="${s.name}">${s.name} (${s.kelas || 'Tanpa Kelas'})</option>`).join('');
             
+            // Tambahkan atribut onchange secara dinamis jika belum ada di HTML
             select.onchange = window.handleStudentSelectionChange;
         };
 
@@ -1473,7 +1494,7 @@
             }).join('');
         };
 
-        // Firestore Listeners
+       // Firestore Listeners Lengkap
         onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap) => {
             updateFirebaseConnectedStatus();
             window.allSetoranData = [];
@@ -1504,6 +1525,7 @@
             populateStudentDropdowns(activeStudents);
         }, handleFirestoreError);
 
+        // 1. LISTENER KELOLA KELAS
         onSnapshot(query(collection(db, "kelas")), (snap) => {
             updateFirebaseConnectedStatus();
             const tbody = document.getElementById('kelas-table-body');
@@ -1549,6 +1571,7 @@
             }
         }, handleFirestoreError);
 
+        // 2. LISTENER KELOLA GURU & AKUN
         onSnapshot(query(collection(db, "accounts")), (snap) => {
             updateFirebaseConnectedStatus();
             window.allAccountsData = [];
@@ -1591,8 +1614,8 @@
             snap.forEach(d => window.allHalaqahData.push({ id: d.id, ...d.data() }));
             renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
         }, handleFirestoreError);
-
-        // Data Master Referensi Surah Al-Quran
+		
+		// Data Master Referensi Surah Al-Quran (Lengkap No. Urut, Nama, Juz, dan Max Ayat)
         const masterSurahQuran = [
             { no: 1, name: "Al-Fatihah", juz: 1, maxAyat: 7 },
             { no: 2, name: "Al-Baqarah", juz: 1, maxAyat: 286 },
@@ -1710,6 +1733,7 @@
             { no: 114, name: "An-Nas", juz: 30, maxAyat: 6 }
         ];
 
+        // Fungsi untuk mengisi dropdown dengan format: "1. Al-Fatihah (Juz 1)"
         window.initSurahDropdown = function() {
             const surahSelect = document.getElementById('input-surah');
             if(!surahSelect) return;
@@ -1722,10 +1746,14 @@
                 `).join('');
         };
 
+        // Panggil inisialisasi dropdown surah saat halaman atau tab siap
         document.addEventListener('DOMContentLoaded', () => {
             window.initSurahDropdown();
         });
-
+		
+		
+		
+		// Fungsi otomatis terpicu saat surah dipilih
         window.handleSurahChange = function() {
             const surahSelect = document.getElementById('input-surah');
             const juzInput = document.getElementById('input-juz');
@@ -1737,6 +1765,7 @@
                 const juz = selectedOption.getAttribute('data-juz');
                 const maxAyat = selectedOption.getAttribute('data-max');
 
+                // Otomatis isi kolom Juz dan batasi maksimal ayat
                 if (juzInput) juzInput.value = juz;
                 if (ayatSelesaiInput) {
                     ayatSelesaiInput.max = maxAyat;
@@ -1750,13 +1779,16 @@
                 }
             }
         };
-
-        window.submitSetoran = async function(e) {
+		
+		
+		
+		window.submitSetoran = async function(e) {
             e.preventDefault();
             
             const siswaVal = document.getElementById('input-siswa').value;
             const jenisVal = document.getElementById('input-jenis').value;
             const surahSelect = document.getElementById('input-surah');
+            // Ambil nama bersih surah tanpa nomor urut (misal: "Al-Ikhlas")
             const surahVal = surahSelect.options[surahSelect.selectedIndex]?.text || document.getElementById('input-surah').value;
             const juzVal = document.getElementById('input-juz').value;
             const ayatMulaiVal = document.getElementById('input-ayat-mulai').value;
@@ -1783,35 +1815,49 @@
             };
 
             try {
+                // Simpan data ke koleksi 'setoran' di Firestore
                 await addDoc(collection(db, "setoran"), dataSetoran);
+                
+                // Tampilkan notifikasi sukses sesuai permintaan
                 alert("Alhamdulillah! Catatan setoran berhasil disimpan ke database.");
+                
+                // Reset formulir input
                 document.getElementById('setoran-form').reset();
+                
+                // Otomatis arahkan (switch) tampilan ke menu Data Mutabaah agar guru bisa langsung melihat hasilnya
                 switchTab('data-mutabaah');
             } catch (err) {
                 console.error("Error menyimpan setoran:", err);
                 alert("Gagal menyimpan setoran ke Firebase: " + err.message);
             }
         };
-
+		
+		
+        // Fungsi render tabel Data Mutabaah dengan filter ketat berbasis kelompok halaqah & penguji
         window.renderAllTable = function(list) {
             const tbody = document.getElementById('all-mutabaah-table');
             if(!tbody) return;
 
             let displayList = list || window.allSetoranData || [];
 
+            // Jika yang login BUKAN Admin (artinya Guru Tahfiz)
             if (window.currentUserRole && window.currentUserRole !== 'Admin') {
                 const currentName = (window.currentUser || window.currentUserName || '').trim().toLowerCase();
                 
+                // 1. Cari data kelompok halaqah yang diampu oleh guru ini
                 const guruHalaqah = (window.allHalaqahData || []).filter(h => 
                     (h.teacher && h.teacher.toLowerCase().includes(currentName)) ||
                     h.id === window.currentUserLinked
                 );
                 const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
                 
+                // 2. Ambil daftar nama seluruh siswa yang berada di dalam kelompok halaqah guru ini
                 const santriBinaanNames = (window.allStudentsData || [])
                     .filter(s => halaqahIds.includes(s.idHalaqah))
                     .map(s => s.name.trim().toLowerCase());
 
+                // 3. Filter mutabaah: HANYA tampilkan jika nama siswa tersebut ada di kelompok halaqahnya 
+                // ATAU kolom penguji pada data setoran mengandung nama guru yang sedang login
                 displayList = displayList.filter(item => {
                     const siswaItem = (item.siswa || '').trim().toLowerCase();
                     const pengujiItem = (item.penguji || '').trim().toLowerCase();
@@ -1841,6 +1887,7 @@
             `).join('');
         };
 
+        // 2. Perbarui Fungsi Apply Filters
         window.applyFilters = function() {
             let filtered = [...(window.allSetoranData || [])];
             const periode = document.getElementById('filter-periode')?.value || 'semua';
@@ -1861,6 +1908,16 @@
             renderAllTable(filtered);
         };
 
+        // 3. Listener Firestore untuk koleksi 'setoran'
+        onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap) => {
+            updateFirebaseConnectedStatus();
+            window.allSetoranData = [];
+            snap.forEach(d => window.allSetoranData.push({ id: d.id, ...d.data() }));
+            applyFilters();
+        }, handleFirestoreError);
+		
+		
+		// Fungsi untuk mendeteksi dan menampilkan informasi setoran terakhir siswa
         window.handleStudentSelectionChange = function() {
             const selectSiswa = document.getElementById('input-siswa');
             const infoBox = document.getElementById('student-last-setoran-info');
@@ -1875,6 +1932,7 @@
                 return;
             }
 
+            // Cari seluruh data setoran milik siswa yang dipilih (diurutkan berdasarkan waktu terbaru)
             const studentSetoran = (window.allSetoranData || []).filter(item => 
                 item.siswa && item.siswa.toLowerCase() === selectedStudentName.toLowerCase()
             );
@@ -1882,6 +1940,7 @@
             infoBox.classList.remove('hidden');
 
             if (studentSetoran.length > 0) {
+                // Ambil setoran yang paling baru
                 const latest = studentSetoran[0];
                 const tgl = latest.timestamp ? new Date(latest.timestamp).toLocaleDateString('id-ID') : '-';
                 
@@ -1892,7 +1951,8 @@
                 infoBox.className = "mt-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 flex items-center space-x-1.5 shadow-sm";
             }
         };
-
+		
+		// Fungsi untuk menyesuaikan tampilan dasbor berdasarkan role (Admin vs Guru Tahfiz)
         window.setupDashboardByRole = function() {
             const banner = document.getElementById('guru-halaqah-banner');
             const adminFilter = document.getElementById('admin-filter-section');
@@ -1902,12 +1962,14 @@
             const tableHeader = document.getElementById('dashboard-table-header');
             
             if (window.currentUserRole && window.currentUserRole !== 'Admin') {
+                // TAMPILAN KHUSUS GURU TAHFIZ
                 if(banner) banner.classList.remove('hidden');
                 if(adminFilter) adminFilter.classList.add('hidden');
                 if(adminCharts) adminCharts.classList.add('hidden');
 
                 document.getElementById('banner-guru-name').innerText = window.currentUser || window.currentUserName || 'Ustadz Pembimbing';
                 
+                // Hitung jumlah santri binaan kelompok halaqahnya
                 const guruHalaqah = (window.allHalaqahData || []).filter(h => 
                     (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
                     h.id === window.currentUserLinked
@@ -1921,6 +1983,7 @@
                 if(tableTitle) tableTitle.innerText = "Daftar Santri Binaan Kelompok Halaqah Anda";
                 if(actionBtn) actionBtn.style.display = 'none';
 
+                // Render tabel santri binaan seperti contoh gambar
                 if(tableHeader) {
                     tableHeader.innerHTML = `
                         <th class="py-3 px-4 font-semibold">No</th>
@@ -1957,6 +2020,7 @@
                 }
 
             } else {
+                // TAMPILAN UTAMA UNTUK ADMIN
                 if(banner) banner.classList.add('hidden');
                 if(adminFilter) adminFilter.classList.remove('hidden');
                 if(adminCharts) adminCharts.classList.remove('hidden');
@@ -1975,11 +2039,37 @@
                 }
             }
         };
-    
-	  </script>
-	
 		
-   
+		document.addEventListener('DOMContentLoaded', () => {
+            const savedRole = localStorage.getItem('tahfiz_role');
+            const savedUser = localStorage.getItem('tahfiz_user');
+            const savedName = localStorage.getItem('tahfiz_name');
+            const savedLinked = localStorage.getItem('tahfiz_linked');
+
+            if (savedRole && savedUser) {
+                window.currentUserRole = savedRole;
+                window.currentUser = savedUser;
+                window.currentUserName = savedName || savedUser;
+                window.currentUserLinked = savedLinked;
+
+                // Sembunyikan halaman login, tampilkan app-container
+                const loginPage = document.getElementById('login-page');
+                const appContainer = document.getElementById('app-container');
+
+                if (loginPage) loginPage.classList.add('hidden');
+                if (appContainer) appContainer.classList.remove('hidden');
+
+                if (typeof window.setupDashboardByRole === 'function') {
+                    window.setupDashboardByRole();
+                }
+                if (typeof window.initSurahDropdown === 'function') {
+                    window.initSurahDropdown();
+                }
+            }
+        });
+		
+		
+    </script>
 	
 	
 </body>
