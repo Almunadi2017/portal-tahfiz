@@ -139,8 +139,20 @@
             <!-- MAIN VIEWPORT -->
             <main class="flex-1 overflow-y-auto p-6 space-y-6">
                 <!-- TAB 1: DASHBOARD -->
+                <!-- TAB 1: DASHBOARD -->
                 <div id="tab-dashboard" class="space-y-6">
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
+                    
+                    <!-- KARTU SAMBUTAN & RINGKASAN HALAQAH (KHUSUS GURU TAHFIZ) -->
+                    <div id="guru-halaqah-banner" class="hidden bg-gradient-to-r from-slate-800 to-slate-900 text-white p-6 rounded-2xl shadow-md space-y-2">
+                        <div class="flex items-center space-x-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
+                            <i class="fa-solid fa-people-roof"></i><span>Kelompok Halaqah</span>
+                        </div>
+                        <h3 id="banner-guru-name" class="text-2xl font-bold">Ustadz Pembimbing</h3>
+                        <p id="banner-santri-count" class="text-xs text-slate-300 font-medium">Santri Binaan: 0 Santri</p>
+                    </div>
+
+                    <!-- FILTER PERIODE (UNTUK ADMIN / UMUM) -->
+                    <div id="admin-filter-section" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
                         <div class="flex flex-wrap items-center gap-3">
                             <div class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5">
                                 <i class="fa-solid fa-calendar text-slate-500"></i>
@@ -163,6 +175,7 @@
                         <button onclick="resetFilters()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-lg font-semibold transition">Reset Filter</button>
                     </div>
 
+                    <!-- KARTU STATISTIK UTAMA -->
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
                             <div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Siswa</p><h3 id="stat-total-siswa" class="text-2xl font-bold text-slate-800 mt-1">0</h3></div>
@@ -182,7 +195,8 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- GRAFIK STATISTIK (UNTUK ADMIN) -->
+                    <div id="admin-charts-section" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
                             <div class="flex items-center justify-between mb-4"><h4 class="font-bold text-slate-800 text-sm">Statistik Setoran per Juz</h4><span class="text-xs text-blue-600 font-semibold bg-blue-50 px-2.5 py-1 rounded-lg">Capaian Siswa</span></div>
                             <div class="h-64"><canvas id="juzChart"></canvas></div>
@@ -193,12 +207,16 @@
                         </div>
                     </div>
 
+                    <!-- TABEL UTAMA: DAFTAR SANTRI BINAAN KELOMPOK HALAQAH (UNTUK GURU TAHFIZ) ATAU SETORAN TERBARU (UNTUK ADMIN) -->
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                        <div class="flex items-center justify-between mb-4"><h4 class="font-bold text-slate-800 text-sm">Setoran Terbaru</h4><button onclick="switchTab('input-setoran')" class="text-xs text-blue-600 font-semibold hover:underline">Tambah Baru</button></div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 id="dashboard-table-title" class="font-bold text-slate-800 text-sm">Setoran Terbaru</h4>
+                            <button id="dashboard-action-btn" onclick="switchTab('input-setoran')" class="text-xs text-blue-600 font-semibold hover:underline">Tambah Baru</button>
+                        </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse text-xs">
                                 <thead>
-                                    <tr class="border-b border-slate-200 text-slate-500 bg-slate-50">
+                                    <tr id="dashboard-table-header" class="border-b border-slate-200 text-slate-500 bg-slate-50">
                                         <th class="py-3 px-4 font-semibold">Tanggal</th>
                                         <th class="py-3 px-4 font-semibold">Siswa</th>
                                         <th class="py-3 px-4 font-semibold">Surah & Ayat</th>
@@ -208,7 +226,7 @@
                                         <th class="py-3 px-4 font-semibold">Penguji</th>
                                     </tr>
                                 </thead>
-                                <tbody id="recent-setoran-table" class="divide-y divide-slate-100 text-slate-700">
+                                <tbody id="dashboard-main-table-body" class="divide-y divide-slate-100 text-slate-700">
                                     <tr><td colspan="7" class="py-4 text-center text-slate-400">Memuat data...</td></tr>
                                 </tbody>
                             </table>
@@ -1225,6 +1243,10 @@
             window.populateStudentDropdowns(window.allStudentsData);
             window.initSurahDropdown();
         }
+		if (tabId === 'dashboard') {
+            window.setupDashboardByRole();
+        }
+		
         };
 
         window.closeModal = function(id) { 
@@ -1845,6 +1867,93 @@
             }
         };
 		
+		// Fungsi untuk menyesuaikan tampilan dasbor berdasarkan role (Admin vs Guru Tahfiz)
+        window.setupDashboardByRole = function() {
+            const banner = document.getElementById('guru-halaqah-banner');
+            const adminFilter = document.getElementById('admin-filter-section');
+            const adminCharts = document.getElementById('admin-charts-section');
+            const tableTitle = document.getElementById('dashboard-table-title');
+            const actionBtn = document.getElementById('dashboard-action-btn');
+            const tableHeader = document.getElementById('dashboard-table-header');
+            
+            if (window.currentUserRole && window.currentUserRole !== 'Admin') {
+                // TAMPILAN KHUSUS GURU TAHFIZ
+                if(banner) banner.classList.remove('hidden');
+                if(adminFilter) adminFilter.classList.add('hidden');
+                if(adminCharts) adminCharts.classList.add('hidden');
+
+                document.getElementById('banner-guru-name').innerText = window.currentUser || window.currentUserName || 'Ustadz Pembimbing';
+                
+                // Hitung jumlah santri binaan kelompok halaqahnya
+                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                    (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
+                    h.id === window.currentUserLinked
+                );
+                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                const binaanSiswa = (window.allStudentsData || []).filter(s => halaqahIds.includes(s.idHalaqah));
+                
+                document.getElementById('banner-santri-count').innerText = `Santri Binaan: ${binaanSiswa.length} Santri`;
+                document.getElementById('stat-total-siswa').innerText = binaanSiswa.length;
+
+                if(tableTitle) tableTitle.innerText = "Daftar Santri Binaan Kelompok Halaqah Anda";
+                if(actionBtn) actionBtn.style.display = 'none';
+
+                // Render tabel santri binaan seperti contoh gambar
+                if(tableHeader) {
+                    tableHeader.innerHTML = `
+                        <th class="py-3 px-4 font-semibold">No</th>
+                        <th class="py-3 px-4 font-semibold">NIS</th>
+                        <th class="py-3 px-4 font-semibold">Nama Santri</th>
+                        <th class="py-3 px-4 font-semibold">Kelas</th>
+                        <th class="py-3 px-4 font-semibold">Target Juz</th>
+                        <th class="py-3 px-4 font-semibold">Wali & Kontak</th>
+                        <th class="py-3 px-4 font-semibold text-center">Aksi</th>
+                    `;
+                }
+
+                const tbody = document.getElementById('dashboard-main-table-body');
+                if(tbody) {
+                    if(binaanSiswa.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada santri di kelompok halaqah Anda.</td></tr>';
+                    } else {
+                        tbody.innerHTML = binaanSiswa.map((s, index) => `
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 font-semibold">${index + 1}</td>
+                                <td class="py-3 px-4 font-mono">${s.nis || '-'}</td>
+                                <td class="py-3 px-4 font-bold text-slate-800">${s.name}</td>
+                                <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${s.kelas || '-'}</span></td>
+                                <td class="py-3 px-4">${s.target || 'Juz 30'}</td>
+                                <td class="py-3 px-4">${s.guardian || '-'} <br><a href="https://wa.me/${s.phone}" target="_blank" class="text-emerald-600 hover:underline"><i class="fa-brands fa-whatsapp"></i> ${s.phone || '-'}</a></td>
+                                <td class="py-3 px-4 text-center">
+                                    <button onclick="alert('Fitur cetak rapor hafalan untuk santri ${s.name}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold border border-slate-300">
+                                        <i class="fa-solid fa-file-lines text-blue-600 mr-1"></i> Rapor
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+
+            } else {
+                // TAMPILAN UTAMA UNTUK ADMIN
+                if(banner) banner.classList.add('hidden');
+                if(adminFilter) adminFilter.classList.remove('hidden');
+                if(adminCharts) adminCharts.classList.remove('hidden');
+                if(tableTitle) tableTitle.innerText = "Setoran Terbaru";
+                if(actionBtn) actionBtn.style.display = 'block';
+                if(tableHeader) {
+                    tableHeader.innerHTML = `
+                        <th class="py-3 px-4 font-semibold">Tanggal</th>
+                        <th class="py-3 px-4 font-semibold">Siswa</th>
+                        <th class="py-3 px-4 font-semibold">Surah & Ayat</th>
+                        <th class="py-3 px-4 font-semibold">Juz</th>
+                        <th class="py-3 px-4 font-semibold">Jenis</th>
+                        <th class="py-3 px-4 font-semibold">Kualitas</th>
+                        <th class="py-3 px-4 font-semibold">Penguji</th>
+                    `;
+                }
+            }
+        };
 		
     </script>
 	
