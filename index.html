@@ -1145,126 +1145,84 @@
         };
 
         // Fungsi Login Utama yang Aman & Cepat
+        // Fungsi Login Utama yang Aman & Cepat
         window.handleLogin = function(e) {
             e.preventDefault();
-            const uInput = document.getElementById('login-username').value.trim().toLowerCase();
-            const pInput = document.getElementById('login-password').value.trim();
+            
+            const usernameInput = document.getElementById('login-username');
+            const passwordInput = document.getElementById('login-password');
+            
+            if (!usernameInput || !passwordInput) return;
+            
+            const uInput = usernameInput.value.trim().toLowerCase();
+            const pInput = passwordInput.value.trim();
 
+            // 1. Validasi Login Admin Utama
             if (uInput === 'admin' && pInput === 'admin') {
                 window.currentUser = 'Administrator Utama';
                 window.currentUserRole = 'Admin';
                 window.currentUserLinked = 'ALL';
                 window.currentUserName = 'Administrator';
-				
-				// --- SIMPAN SESI ADMIN KE LOCALSTORAGE ---
+
+                // Simpan Sesi ke LocalStorage
                 localStorage.setItem('tahfiz_role', 'Admin');
                 localStorage.setItem('tahfiz_user', 'Administrator Utama');
                 localStorage.setItem('tahfiz_name', 'Administrator');
                 localStorage.setItem('tahfiz_linked', 'ALL');
-                
-                document.getElementById('user-display-name').innerText = 'ADMINISTRATOR';
-                document.getElementById('user-role').innerText = 'Administrator';
-                document.getElementById('login-page').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
 
-                applyRoleBasedSidebar('Admin');
-                switchTab('dashboard');
-                if(window.allStudentsData) {
-                    document.getElementById('stat-total-siswa').innerText = window.allStudentsData.length;
-                    renderStudentsTable(window.allStudentsData);
-                }
+                const loginPage = document.getElementById('login-page');
+                const appContainer = document.getElementById('app-container');
+                if (loginPage) loginPage.classList.add('hidden');
+                if (appContainer) appContainer.classList.remove('hidden');
+
+                const displayName = document.getElementById('user-display-name');
+                const displayRole = document.getElementById('user-role');
+                if (displayName) displayName.innerText = 'ADMINISTRATOR';
+                if (displayRole) displayRole.innerText = 'Administrator';
+
+                if (typeof window.applyRoleBasedSidebar === 'function') window.applyRoleBasedSidebar('Admin');
+                if (typeof window.switchTab === 'function') window.switchTab('dashboard');
                 return;
             }
 
-            if (!window.allAccountsData || window.allAccountsData.length === 0) {
-                alert("Data akun sedang disinkronisasi. Mohon tunggu 2 detik lalu klik Login kembali.");
-                return;
-            }
-
-            const matchedAccount = window.allAccountsData.find(acc => {
-                const dbUser = acc.username ? String(acc.username).trim().toLowerCase() : '';
-                const dbPass = acc.password ? String(acc.password).trim() : '';
-                return dbUser === uInput && dbPass === pInput;
-            });
+            // 2. Validasi Login Guru Tahfiz (Mencocokkan dari data Firestore/allAccountsData)
+            const matchedAccount = (window.allAccountsData || []).find(acc => 
+                (acc.username && acc.username.trim().toLowerCase() === uInput) && 
+                (acc.password && acc.password.trim() === pInput)
+            );
 
             if (matchedAccount) {
-                window.currentUserRole = matchedAccount.role;
-                window.currentUserLinked = matchedAccount.linked || 'ALL';
-                window.currentUser = matchedAccount.name;
-                window.currentUserName = matchedAccount.name;
+                const namaGuru = matchedAccount.nama || matchedAccount.name || 'Guru Tahfiz';
+                const roleGuru = matchedAccount.role || 'Guru Tahfiz';
+                const linkedId = matchedAccount.idHalaqah || matchedAccount.halaqahId || '';
 
-                document.getElementById('user-display-name').innerText = matchedAccount.name.toUpperCase();
-                document.getElementById('user-role').innerText = formatRoleName(matchedAccount.role);
-                
-                document.getElementById('login-page').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
+                window.currentUser = namaGuru;
+                window.currentUserRole = roleGuru;
+                window.currentUserName = namaGuru;
+                window.currentUserLinked = linkedId;
 
-                window.applyRoleBasedSidebar(matchedAccount.role);
-                switchTab('dashboard');
+                // Simpan Sesi ke LocalStorage
+                localStorage.setItem('tahfiz_role', roleGuru);
+                localStorage.setItem('tahfiz_user', namaGuru);
+                localStorage.setItem('tahfiz_name', namaGuru);
+                localStorage.setItem('tahfiz_linked', linkedId);
 
-                if(window.allStudentsData) {
-                    let activeStudents = window.allStudentsData;
-                    if (window.currentUserRole !== 'Admin') {
-                        const guruHalaqah = (window.allHalaqahData || []).filter(h => 
-                            (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
-                            h.id === window.currentUserLinked
-                        );
-                        const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
-                        activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
-                    }
-                    const statTotalSiswa = document.getElementById('stat-total-siswa');
-                    if(statTotalSiswa) statTotalSiswa.innerText = activeStudents.length;
-                    updateDashboardStatsAndCharts(window.allSetoranData || []);
-                }
+                const loginPage = document.getElementById('login-page');
+                const appContainer = document.getElementById('app-container');
+                if (loginPage) loginPage.classList.add('hidden');
+                if (appContainer) appContainer.classList.remove('hidden');
+
+                const displayName = document.getElementById('user-display-name');
+                const displayRole = document.getElementById('user-role');
+                if (displayName) displayName.innerText = namaGuru.toUpperCase();
+                if (displayRole) displayRole.innerText = roleGuru;
+
+                if (typeof window.applyRoleBasedSidebar === 'function') window.applyRoleBasedSidebar(roleGuru);
+                if (typeof window.setupDashboardByRole === 'function') window.setupDashboardByRole();
+                if (typeof window.switchTab === 'function') window.switchTab('dashboard');
             } else {
-                alert("Username atau Password salah!");
+                alert('Username atau Password salah! Silakan periksa kembali.');
             }
-			
-			// Contoh di dalam fungsi penanganan login yang sudah ada:
-// ... (setelah verifikasi akun berhasil) ...
-
-window.currentUserRole = role; 
-window.currentUser = username; 
-window.currentUserName = fullName; 
-window.currentUserLinked = linkedId; 
-
-// SIMPAN KE LOCALSTORAGE DISINI:
-localStorage.setItem('tahfiz_role', role);
-localStorage.setItem('tahfiz_user', username);
-localStorage.setItem('tahfiz_name', fullName || username);
-localStorage.setItem('tahfiz_linked', linkedId || '');
-
-// ... (lanjutan kode untuk menyembunyikan form login & menampilkan dashboard) ...
-		// Contoh di dalam fungsi saat login Guru Tahfiz berhasil dicocokkan:
-        if (isGuruValid) {
-            // Variabel nama dan data guru yang berhasil login
-            const namaGuru = guruData.nama; 
-            const idHalaqahGuru = guruData.idHalaqah; 
-
-            window.currentUser = namaGuru;
-            window.currentUserRole = 'Guru Tahfiz';
-            window.currentUserName = namaGuru;
-            window.currentUserLinked = idHalaqahGuru;
-
-            // --- LETAKKAN KODE INI DI SINI ---
-            localStorage.setItem('tahfiz_role', 'Guru Tahfiz');
-            localStorage.setItem('tahfiz_user', namaGuru);
-            localStorage.setItem('tahfiz_name', namaGuru);
-            localStorage.setItem('tahfiz_linked', idHalaqahGuru);
-            // ---------------------------------
-
-            document.getElementById('user-display-name').innerText = namaGuru.toUpperCase();
-            document.getElementById('user-role').innerText = 'Guru Tahfiz';
-            document.getElementById('login-page').classList.add('hidden');
-            document.getElementById('app-container').classList.remove('hidden');
-
-            applyRoleBasedSidebar('Guru Tahfiz');
-            switchTab('dashboard');
-        }	
-			
-			
-			
-			
         };
 
         window.applyRoleBasedSidebar = function(role) {
