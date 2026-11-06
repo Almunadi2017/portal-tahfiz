@@ -1050,6 +1050,19 @@
 	
 	<!-- SCRIPTS -->
     <script type="module">
+	
+	<script type="module">
+    // --- CEK SESI LOCALSTORAGE DI BARIS PALING AWAL SEBELUM APAPUN ---
+    const savedRole = localStorage.getItem('tahfiz_role');
+    const savedUser = localStorage.getItem('tahfiz_user');
+    
+    if (savedRole && savedUser) {
+        // Pulihkan variabel global sesi
+        window.currentUserRole = savedRole;
+        window.currentUser = savedUser;
+        window.currentUserName = localStorage.getItem('tahfiz_name') || savedUser;
+        window.currentUserLinked = localStorage.getItem('tahfiz_linked') || '';
+    }
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -1312,9 +1325,11 @@ localStorage.setItem('tahfiz_linked', linkedId || '');
             document.getElementById('login-form').reset();
 			
 		window.logout = function() {
-            localStorage.clear(); // Menghapus seluruh sesi tersimpan
-            location.reload();
-        };
+        localStorage.clear(); // Menghapus seluruh sesi tersimpan
+        window.currentUserRole = null;
+        window.currentUser = null;
+        location.reload();
+    };
 			
 			
         };
@@ -2068,51 +2083,35 @@ localStorage.setItem('tahfiz_linked', linkedId || '');
         };
 		
 		document.addEventListener('DOMContentLoaded', () => {
-            const savedRole = localStorage.getItem('tahfiz_role');
-            const savedUser = localStorage.getItem('tahfiz_user');
-            const savedName = localStorage.getItem('tahfiz_name');
-            const savedLinked = localStorage.getItem('tahfiz_linked');
+        const loginPage = document.getElementById('login-page');
+        const appContainer = document.getElementById('app-container');
 
-            const loginPage = document.getElementById('login-page');
-            const appContainer = document.getElementById('app-container');
+        if (window.currentUserRole && window.currentUser) {
+            // Sembunyikan login, tampilkan aplikasi utama
+            if (loginPage) loginPage.classList.add('hidden');
+            if (appContainer) appContainer.classList.remove('hidden');
 
-            if (savedRole && savedUser) {
-                // Pulihkan variabel sesi global
-                window.currentUserRole = savedRole;
-                window.currentUser = savedUser;
-                window.currentUserName = savedName || savedUser;
-                window.currentUserLinked = savedLinked;
+            // Set nama dan role di pojok kanan atas
+            const displayNameEl = document.getElementById('user-display-name');
+            const displayRoleEl = document.getElementById('user-role');
+            if (displayNameEl) displayNameEl.innerText = window.currentUserName.toUpperCase();
+            if (displayRoleEl) displayRoleEl.innerText = window.currentUserRole;
 
-                // Sembunyikan login, tampilkan aplikasi utama
-                if (loginPage) loginPage.classList.add('hidden');
-                if (appContainer) appContainer.classList.remove('hidden');
-
-                // Pulihkan teks nama & role di pojok kanan atas berdasarkan data yang tersimpan
-                const displayNameEl = document.getElementById('user-display-name');
-                const displayRoleEl = document.getElementById('user-role');
-                if (displayNameEl) displayNameEl.innerText = (savedName || savedUser).toUpperCase();
-                if (displayRoleEl) displayRoleEl.innerText = savedRole;
-
-                // Terapkan sidebar dan dasbor sesuai role (Admin / Guru Tahfiz)
-                if (typeof window.applyRoleBasedSidebar === 'function') {
-                    window.applyRoleBasedSidebar(savedRole);
-                }
-                if (typeof window.setupDashboardByRole === 'function') {
-                    window.setupDashboardByRole();
-                }
-                if (typeof window.initSurahDropdown === 'function') {
-                    window.initSurahDropdown();
-                }
-                
-                // Buka tab awal (dashboard)
-                if (typeof window.switchTab === 'function') {
-                    window.switchTab('dashboard');
-                }
-            } else {
-                if (loginPage) loginPage.classList.remove('hidden');
-                if (appContainer) appContainer.classList.add('hidden');
+            // Terapkan sidebar dan dasbor sesuai role yang aktif (Admin atau Guru Tahfiz)
+            if (typeof window.applyRoleBasedSidebar === 'function') {
+                window.applyRoleBasedSidebar(window.currentUserRole);
             }
-        });
+            if (typeof window.setupDashboardByRole === 'function') {
+                window.setupDashboardByRole();
+            }
+            if (typeof window.switchTab === 'function') {
+                window.switchTab('dashboard');
+            }
+        } else {
+            if (loginPage) loginPage.classList.remove('hidden');
+            if (appContainer) appContainer.classList.add('hidden');
+        }
+    });
 		
 		
     </script>
