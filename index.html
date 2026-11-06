@@ -1767,6 +1767,7 @@
 		
 		// 1. Fungsi render tabel Data Mutabaah dengan filter Role yang akurat
         // Fungsi render tabel Data Mutabaah dengan filter ketat khusus Guru Tahfiz yang login
+        // Fungsi render tabel Data Mutabaah khusus menampilkan setoran dari Guru yang sedang login saja
         window.renderAllTable = function(list) {
             const tbody = document.getElementById('all-mutabaah-table');
             if(!tbody) return;
@@ -1777,26 +1778,16 @@
             if (window.currentUserRole && window.currentUserRole !== 'Admin') {
                 const currentTeacherName = (window.currentUser || window.currentUserName || '').trim().toLowerCase();
                 
-                // Cari kelompok halaqah yang diampu oleh guru ini
-                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
-                    (h.teacher && h.teacher.toLowerCase().includes(currentTeacherName)) ||
-                    h.id === window.currentUserLinked
-                );
-                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
-                
-                // Ambil daftar nama siswa yang ada di dalam kelompok halaqah guru ini
-                const santriDiHalaqah = (window.allStudentsData || []).filter(s => halaqahIds.includes(s.idHalaqah)).map(s => s.name.toLowerCase());
-                
-                // Filter data mutabaah: HANYA tampilkan jika siswa termasuk dalam kelompok halaqah ATAU diuji oleh guru tersebut
+                // Filter ketat: HANYA tampilkan data setoran yang kolom pengujinya cocok dengan nama guru yang sedang login
                 displayList = displayList.filter(item => {
-                    const siswaMatch = item.siswa && santriDiHalaqah.includes(item.siswa.toLowerCase());
-                    const pengujiMatch = item.penguji && item.penguji.toLowerCase().includes(currentTeacherName);
-                    return siswaMatch || pengujiMatch;
+                    const pengujiData = (item.penguji || '').trim().toLowerCase();
+                    // Cocokkan jika nama penguji mengandung nama guru yang sedang login
+                    return pengujiData.includes(currentTeacherName) || currentTeacherName.includes(pengujiData);
                 });
             }
 
             if (displayList.length === 0) { 
-                tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data mutabaah untuk kelompok halaqah Anda.</td></tr>'; 
+                tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada catatan setoran yang Anda input.</td></tr>'; 
                 return; 
             }
 
