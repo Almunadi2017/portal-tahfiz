@@ -1765,10 +1765,8 @@
             }
         };
 		
-		// 1. Fungsi render tabel Data Mutabaah dengan filter Role yang akurat
-        // Fungsi render tabel Data Mutabaah dengan filter ketat khusus Guru Tahfiz yang login
-        // Fungsi render tabel Data Mutabaah khusus menampilkan setoran dari Guru yang sedang login saja
-        // Fungsi render tabel Data Mutabaah dengan pencocokan nama penguji yang lebih luas
+		
+        // Fungsi render tabel Data Mutabaah dengan filter ketat berbasis kelompok halaqah & penguji
         window.renderAllTable = function(list) {
             const tbody = document.getElementById('all-mutabaah-table');
             if(!tbody) return;
@@ -1777,24 +1775,35 @@
 
             // Jika yang login BUKAN Admin (artinya Guru Tahfiz)
             if (window.currentUserRole && window.currentUserRole !== 'Admin') {
-                // Ambil semua kemungkinan variabel nama guru yang sedang aktif
-                const possibleNames = [
-                    window.currentUser,
-                    window.currentUserName,
-                    window.currentUserObject?.name,
-                    window.activeTeacherName
-                ].filter(Boolean).map(n => n.trim().toLowerCase());
+                const currentName = (window.currentUser || window.currentUserName || '').trim().toLowerCase();
+                
+                // 1. Cari data kelompok halaqah yang diampu oleh guru ini
+                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                    (h.teacher && h.teacher.toLowerCase().includes(currentName)) ||
+                    h.id === window.currentUserLinked
+                );
+                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                
+                // 2. Ambil daftar nama seluruh siswa yang berada di dalam kelompok halaqah guru ini
+                const santriBinaanNames = (window.allStudentsData || [])
+                    .filter(s => halaqahIds.includes(s.idHalaqah))
+                    .map(s => s.name.trim().toLowerCase());
 
+                // 3. Filter mutabaah: HANYA tampilkan jika nama siswa tersebut ada di kelompok halaqahnya 
+                // ATAU kolom penguji pada data setoran mengandung nama guru yang sedang login
                 displayList = displayList.filter(item => {
+                    const siswaItem = (item.siswa || '').trim().toLowerCase();
                     const pengujiItem = (item.penguji || '').trim().toLowerCase();
                     
-                    // Cek apakah nama penguji pada data setoran cocok dengan salah satu variasi nama guru yang login
-                    return possibleNames.some(name => pengujiItem.includes(name) || name.includes(pengujiItem));
+                    const isSiswaBinaan = santriBinaanNames.includes(siswaItem);
+                    const isPengujiSendiri = pengujiItem.includes(currentName) || currentName.includes(pengujiItem);
+
+                    return isSiswaBinaan || isPengujiSendiri;
                 });
             }
 
             if (displayList.length === 0) { 
-                tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data mutabaah untuk Anda.</td></tr>'; 
+                tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data mutabaah untuk kelompok Anda.</td></tr>'; 
                 return; 
             }
 
