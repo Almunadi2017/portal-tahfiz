@@ -1065,42 +1065,39 @@
         window.allHalaqahData = [];
 		
 		document.addEventListener('DOMContentLoaded', () => {
-    // Cek apakah ada sesi login yang tersimpan di browser
-    const savedRole = localStorage.getItem('tahfiz_role');
-    const savedUser = localStorage.getItem('tahfiz_user');
-    const savedName = localStorage.getItem('tahfiz_name');
-    const savedLinked = localStorage.getItem('tahfiz_linked');
+            const savedRole = localStorage.getItem('tahfiz_role');
+            const savedUser = localStorage.getItem('tahfiz_user');
+            const savedName = localStorage.getItem('tahfiz_name');
+            const savedLinked = localStorage.getItem('tahfiz_linked');
 
-    if (savedRole && savedUser) {
-        // Pulihkan kembali variabel global sesi Anda
-        window.currentUserRole = savedRole;
-        window.currentUser = savedUser;
-        window.currentUserName = savedName;
-        window.currentUserLinked = savedLinked;
+            // Ambil elemen pembungkus layar login dan aplikasi utama
+            const loginScreen = document.getElementById('login-screen'); // Sesuaikan ID form login Anda
+            const appScreen = document.getElementById('app-screen');     // Sesuaikan ID kontainer utama portal Anda
 
-        // Sembunyikan halaman login, tampilkan halaman utama aplikasi
-        const loginScreen = document.getElementById('login-screen'); // Sesuaikan ID elemen login Anda
-        const appScreen = document.getElementById('app-screen');   // Sesuaikan ID kontainer utama aplikasi
-        
-        if (loginScreen) loginScreen.classList.add('hidden');
-        if (appScreen) appScreen.classList.remove('hidden');
+            if (savedRole && savedUser) {
+                // Pulihkan sesi
+                window.currentUserRole = savedRole;
+                window.currentUser = savedUser;
+                window.currentUserName = savedName || savedUser;
+                window.currentUserLinked = savedLinked;
 
-        // Muat data awal dan sesuaikan dasbor berdasarkan role
-        if (typeof window.setupDashboardByRole === 'function') {
-            window.setupDashboardByRole();
-        }
-        if (typeof window.initSurahDropdown === 'function') {
-            window.initSurahDropdown();
-        }
-    } else {
-        const loginScreen = document.getElementById('login-screen');
-        const appScreen = document.getElementById('app-screen');
-        if (loginScreen) loginScreen.classList.remove('hidden');
-        if (appScreen) appScreen.classList.add('hidden');
-    }
+                // Sembunyikan login, tampilkan aplikasi utama
+                if (loginScreen) loginScreen.classList.add('hidden');
+                if (appScreen) appScreen.classList.remove('hidden');
 
-    // Pemanggilan inisialisasi lainnya yang sudah ada sebelumnya...
-});
+                // Sesuaikan dasbor dan dropdown
+                if (typeof window.setupDashboardByRole === 'function') {
+                    window.setupDashboardByRole();
+                }
+                if (typeof window.initSurahDropdown === 'function') {
+                    window.initSurahDropdown();
+                }
+            } else {
+                // Jika belum login, pastikan tampilkan form login
+                if (loginScreen) loginScreen.classList.remove('hidden');
+                if (appScreen) appScreen.classList.add('hidden');
+            }
+        });
 
         const firebaseConfig = {
             apiKey: "AIzaSyADdAnrvYRIAmErxGk40rNokK1eLo5RaAk",
@@ -1145,6 +1142,12 @@
                 window.currentUserRole = 'Admin';
                 window.currentUserLinked = 'ALL';
                 window.currentUserName = 'Administrator';
+				
+				// --- SIMPAN SESI ADMIN KE LOCALSTORAGE ---
+                localStorage.setItem('tahfiz_role', 'Admin');
+                localStorage.setItem('tahfiz_user', 'Administrator Utama');
+                localStorage.setItem('tahfiz_name', 'Administrator');
+                localStorage.setItem('tahfiz_linked', 'ALL');
                 
                 document.getElementById('user-display-name').innerText = 'ADMINISTRATOR';
                 document.getElementById('user-role').innerText = 'Administrator';
@@ -1281,20 +1284,10 @@ localStorage.setItem('tahfiz_linked', linkedId || '');
             document.getElementById('login-page').classList.remove('hidden');
             document.getElementById('login-form').reset();
 			
-			window.logout = function() {
-    // Hapus seluruh data sesi dari localStorage
-    localStorage.removeItem('tahfiz_role');
-    localStorage.removeItem('tahfiz_user');
-    localStorage.removeItem('tahfiz_name');
-    localStorage.removeItem('tahfiz_linked');
-
-    // Reset variabel global
-    window.currentUserRole = null;
-    window.currentUser = null;
-
-    // Muat ulang halaman untuk kembali ke tampilan login
-    location.reload(); 
-};
+		window.logout = function() {
+            localStorage.clear(); // Menghapus seluruh sesi tersimpan
+            location.reload();
+        };
 			
 			
         };
@@ -2046,6 +2039,35 @@ localStorage.setItem('tahfiz_linked', linkedId || '');
                 }
             }
         };
+		
+		document.addEventListener('DOMContentLoaded', () => {
+            const savedRole = localStorage.getItem('tahfiz_role');
+            const savedUser = localStorage.getItem('tahfiz_user');
+            const savedName = localStorage.getItem('tahfiz_name');
+            const savedLinked = localStorage.getItem('tahfiz_linked');
+
+            if (savedRole && savedUser) {
+                window.currentUserRole = savedRole;
+                window.currentUser = savedUser;
+                window.currentUserName = savedName || savedUser;
+                window.currentUserLinked = savedLinked;
+
+                // Sembunyikan halaman login, tampilkan app-container
+                const loginPage = document.getElementById('login-page');
+                const appContainer = document.getElementById('app-container');
+
+                if (loginPage) loginPage.classList.add('hidden');
+                if (appContainer) appContainer.classList.remove('hidden');
+
+                if (typeof window.setupDashboardByRole === 'function') {
+                    window.setupDashboardByRole();
+                }
+                if (typeof window.initSurahDropdown === 'function') {
+                    window.initSurahDropdown();
+                }
+            }
+        });
+		
 		
     </script>
 	
