@@ -1768,6 +1768,7 @@
 		// 1. Fungsi render tabel Data Mutabaah dengan filter Role yang akurat
         // Fungsi render tabel Data Mutabaah dengan filter ketat khusus Guru Tahfiz yang login
         // Fungsi render tabel Data Mutabaah khusus menampilkan setoran dari Guru yang sedang login saja
+        // Fungsi render tabel Data Mutabaah dengan pencocokan nama penguji yang lebih luas
         window.renderAllTable = function(list) {
             const tbody = document.getElementById('all-mutabaah-table');
             if(!tbody) return;
@@ -1776,18 +1777,24 @@
 
             // Jika yang login BUKAN Admin (artinya Guru Tahfiz)
             if (window.currentUserRole && window.currentUserRole !== 'Admin') {
-                const currentTeacherName = (window.currentUser || window.currentUserName || '').trim().toLowerCase();
-                
-                // Filter ketat: HANYA tampilkan data setoran yang kolom pengujinya cocok dengan nama guru yang sedang login
+                // Ambil semua kemungkinan variabel nama guru yang sedang aktif
+                const possibleNames = [
+                    window.currentUser,
+                    window.currentUserName,
+                    window.currentUserObject?.name,
+                    window.activeTeacherName
+                ].filter(Boolean).map(n => n.trim().toLowerCase());
+
                 displayList = displayList.filter(item => {
-                    const pengujiData = (item.penguji || '').trim().toLowerCase();
-                    // Cocokkan jika nama penguji mengandung nama guru yang sedang login
-                    return pengujiData.includes(currentTeacherName) || currentTeacherName.includes(pengujiData);
+                    const pengujiItem = (item.penguji || '').trim().toLowerCase();
+                    
+                    // Cek apakah nama penguji pada data setoran cocok dengan salah satu variasi nama guru yang login
+                    return possibleNames.some(name => pengujiItem.includes(name) || name.includes(pengujiItem));
                 });
             }
 
             if (displayList.length === 0) { 
-                tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada catatan setoran yang Anda input.</td></tr>'; 
+                tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data mutabaah untuk Anda.</td></tr>'; 
                 return; 
             }
 
