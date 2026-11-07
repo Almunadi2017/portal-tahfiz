@@ -1290,6 +1290,14 @@
             if (tabId === 'dashboard') {
                 window.setupDashboardByRole();
             }
+			
+			if (tabId === 'data-mutabaah') {
+                if (typeof window.applyFilters === 'function') {
+                    window.applyFilters();
+                } else if (typeof window.renderAllTable === 'function') {
+                    window.renderAllTable(window.allSetoranData);
+                }
+            }
         };
 
         window.closeModal = function(id) { 
@@ -1498,25 +1506,36 @@
             }
         };
 
+       // Fungsi render tabel Data Mutabaah dengan pengaman data kosong
         window.renderAllTable = function(list) {
             const tbody = document.getElementById('all-mutabaah-table');
             if(!tbody) return;
 
             let displayList = list || window.allSetoranData || [];
 
+            // Jika data setoran masih kosong dari Firebase
+            if (!window.allSetoranData) {
+                tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Memuat data dari database...</td></tr>';
+                return;
+            }
+
+            // Jika yang login BUKAN Admin (artinya Guru Tahfiz)
             if (window.currentUserRole && window.currentUserRole !== 'Admin') {
                 const currentName = (window.currentUser || window.currentUserName || '').trim().toLowerCase();
                 
+                // 1. Cari data kelompok halaqah yang diampu oleh guru ini
                 const guruHalaqah = (window.allHalaqahData || []).filter(h => 
                     (h.teacher && h.teacher.toLowerCase().includes(currentName)) ||
                     h.id === window.currentUserLinked
                 );
                 const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
                 
+                // 2. Ambil daftar nama seluruh siswa yang berada di dalam kelompok halaqah guru ini
                 const santriBinaanNames = (window.allStudentsData || [])
                     .filter(s => halaqahIds.includes(s.idHalaqah))
                     .map(s => s.name.trim().toLowerCase());
 
+                // 3. Filter mutabaah: Tampilkan jika siswa binaan ATAU diuji sendiri oleh guru tersebut
                 displayList = displayList.filter(item => {
                     const siswaItem = (item.siswa || '').trim().toLowerCase();
                     const pengujiItem = (item.penguji || '').trim().toLowerCase();
@@ -1545,7 +1564,8 @@
                 </tr>
             `).join('');
         };
-
+	   
+	   
         window.applyFilters = function() {
             let filtered = [...(window.allSetoranData || [])];
             const periode = document.getElementById('filter-periode')?.value || 'semua';
