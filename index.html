@@ -1446,18 +1446,19 @@
 
         // Firestore Listeners
         // Listener Firestore untuk koleksi 'setoran' dengan penanganan tabel kosong yang aman
-        onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap) => {
-            updateFirebaseConnectedStatus();
-            window.allSetoranData = [];
-            snap.forEach(d => window.allSetoranData.push({ id: d.id, ...d.data() }));
-            
-            // Panggil filter dan render tabel secara langsung
-            if (typeof window.applyFilters === 'function') {
-                window.applyFilters();
-            } else if (typeof window.renderAllTable === 'function') {
-                window.renderAllTable(window.allSetoranData);
-            }
-        }, handleFirestoreError);
+        // Listener Firestore untuk koleksi 'setoran'
+onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap) => {
+    updateFirebaseConnectedStatus();
+    window.allSetoranData = [];
+    snap.forEach(d => window.allSetoranData.push({ id: d.id, ...d.data() }));
+
+    // Langsung perbarui tampilan tabel
+    if (typeof window.applyFilters === 'function') {
+        window.applyFilters();
+    } else if (typeof window.renderAllTable === 'function') {
+        window.renderAllTable(window.allSetoranData);
+    }
+}, handleFirestoreError);
 
         onSnapshot(query(collection(db, "students")), (snap) => {
             updateFirebaseConnectedStatus();
