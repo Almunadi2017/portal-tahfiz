@@ -1017,6 +1017,58 @@
         window.handleLogout = function() {
             window.logout();
         };
+		
+		let juzChartInstance = null;
+        let typeChartInstance = null;
+
+        window.updateDashboardStatsAndCharts = function(list) {
+            let filteredList = [...list];
+            let totalZiyadah = 0;
+            let totalMurajaah = 0;
+            let juzCounts = { '1': 0, '29': 0, '30': 0 };
+            
+            filteredList.forEach(data => {
+                if (data.jenis === 'Ziyadah') totalZiyadah++;
+                if (data.jenis === 'Murajaah') totalMurajaah++;
+                let juzKey = String(data.juz);
+                juzCounts[juzKey] = (juzCounts[juzKey] || 0) + 1;
+            });
+
+            const statZiyadah = document.getElementById('stat-ziyadah');
+            const statMurajaah = document.getElementById('stat-murajaah');
+            const statTotalSetoran = document.getElementById('stat-total-setoran');
+
+            if (statTotalSetoran) statTotalSetoran.innerText = filteredList.length;
+            if (statZiyadah) statZiyadah.innerText = totalZiyadah;
+            if (statMurajaah) statMurajaah.innerText = totalMurajaah;
+
+            // Render Grafik Chart.js jika elemen canvas tersedia
+            const ctxJuz = document.getElementById('juzChart')?.getContext('2d');
+            if(ctxJuz) {
+                if(juzChartInstance) juzChartInstance.destroy();
+                juzChartInstance = new Chart(ctxJuz, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Juz 1', 'Juz 29', 'Juz 30'],
+                        datasets: [{ label: 'Capaian Siswa', data: [juzCounts['1'] || 0, juzCounts['29'] || 0, juzCounts['30'] || 0], backgroundColor: '#1e293b', borderRadius: 6 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            }
+
+            const ctxType = document.getElementById('typeChart')?.getContext('2d');
+            if(ctxType) {
+                if(typeChartInstance) typeChartInstance.destroy();
+                typeChartInstance = new Chart(ctxType, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Ziyadah', 'Murajaah'],
+                        datasets: [{ data: [totalZiyadah, totalMurajaah], backgroundColor: ['#0ea5e9', '#10b981'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        };
 
         window.switchTab = function(tabId) {
             ['dashboard', 'input-setoran', 'data-mutabaah', 'kelola-halaqah', 'kelola-kelas', 'kelola-guru', 'kelola-siswa', 'kenaikan-kelulusan', 'kelola-akun', 'monev-eksekutif', 'ganti-password'].forEach(t => {
