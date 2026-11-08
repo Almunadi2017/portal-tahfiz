@@ -1258,60 +1258,56 @@
 
        // Fungsi render tabel Data Mutabaah dengan pengaman data kosong
        
+		
 		window.renderAllTable = function(list) {
-         const tbody = document.getElementById('all-mutabaah-table');
-         if(!tbody) return;
+            // Ambil elemen tbody untuk Data Mutabaah DAN Dashboard sekaligus agar tidak pernah keliru
+            const tbodyAll = document.getElementById('all-mutabaah-table');
+            const tbodyDashboard = document.getElementById('dashboard-main-table-body');
+            
+            let displayList = list || window.allSetoranData || [];
 
-         let displayList = list || window.allSetoranData || [];
+            // Filter khusus Guru Tahfiz
+            if (window.currentUserRole && window.currentUserRole !== 'Admin') {
+                const currentName = (window.currentUser || window.currentUserName || '').trim().toLowerCase();
+                
+                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                    (h.teacher && h.teacher.toLowerCase().includes(currentName)) ||
+                    h.id === window.currentUserLinked
+                );
+                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                
+                const santriBinaanNames = (window.allStudentsData || [])
+                    .filter(s => halaqahIds.includes(s.idHalaqah))
+                    .map(s => s.name.trim().toLowerCase());
 
-         // Jika data dari Firebase belum siap
-         if (!window.allSetoranData) {
-             tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Memuat data dari database...</td></tr>';
-             return;
-         }
+                displayList = displayList.filter(item => {
+                    const siswaItem = (item.siswa || '').trim().toLowerCase();
+                    const pengujiItem = (item.penguji || '').trim().toLowerCase();
+                    
+                    const isSiswaBinaan = santriBinaanNames.includes(siswaItem);
+                    const isPengujiSendiri = pengujiItem.includes(currentName) || currentName.includes(pengujiItem);
 
-         // Filter khusus Guru Tahfiz
-         if (window.currentUserRole && window.currentUserRole !== 'Admin') {
-             const currentName = (window.currentUser || window.currentUserName || '').trim().toLowerCase();
+                    return isSiswaBinaan || isPengujiSendiri;
+                });
+            }
 
-             const guruHalaqah = (window.allHalaqahData || []).filter(h => 
-                 (h.teacher && h.teacher.toLowerCase().includes(currentName)) ||
-                 h.id === window.currentUserLinked
-             );
-             const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+            const htmlContent = displayList.length === 0 
+                ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data mutabaah yang tercatat.</td></tr>'
+                : displayList.map(item => `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-3 px-4 text-slate-500">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
+                        <td class="py-3 px-4 font-bold text-slate-800">${item.siswa || '-'}</td>
+                        <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${item.jenis || 'Ziyadah'}</span></td>
+                        <td class="py-3 px-4">${item.surah || '-'} (Ayat ${item.ayatMulai || 1}-${item.ayatSelesai || 1})</td>
+                        <td class="py-3 px-4">Juz ${item.juz || '-'}</td>
+                        <td class="py-3 px-4 font-semibold text-emerald-600">${item.kualitas || '-'}</td>
+                        <td class="py-3 px-4 text-slate-500">${item.penguji || '-'}</td>
+                    </tr>
+                `).join('');
 
-             const santriBinaanNames = (window.allStudentsData || [])
-                 .filter(s => halaqahIds.includes(s.idHalaqah))
-                 .map(s => s.name.trim().toLowerCase());
-
-             displayList = displayList.filter(item => {
-                 const siswaItem = (item.siswa || '').trim().toLowerCase();
-                 const pengujiItem = (item.penguji || '').trim().toLowerCase();
-
-                 const isSiswaBinaan = santriBinaanNames.includes(siswaItem);
-                 const isPengujiSendiri = pengujiItem.includes(currentName) || currentName.includes(pengujiItem);
-
-                 return isSiswaBinaan || isPengujiSendiri;
-             });
-         }
-
-         if (displayList.length === 0) { 
-             tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data mutabaah untuk kelompok Anda.</td></tr>'; 
-             return; 
-         }
-
-         tbody.innerHTML = displayList.map(item => `
-             <tr class="hover:bg-slate-50">
-                 <td class="py-3 px-4 text-slate-500">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
-                 <td class="py-3 px-4 font-bold text-slate-800">${item.siswa || '-'}</td>
-                 <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${item.jenis || 'Ziyadah'}</span></td>
-                 <td class="py-3 px-4">${item.surah || '-'} (Ayat ${item.ayatMulai || 1}-${item.ayatSelesai || 1})</td>
-                 <td class="py-3 px-4">Juz ${item.juz || '-'}</td>
-                 <td class="py-3 px-4 font-semibold text-emerald-600">${item.kualitas || '-'}</td>
-                 <td class="py-3 px-4 text-slate-500">${item.penguji || '-'}</td>
-             </tr>
-         `).join('');
-     };
+            if (tbodyAll) tbodyAll.innerHTML = htmlContent;
+            if (tbodyDashboard && window.currentUserRole === 'Admin') tbodyDashboard.innerHTML = htmlContent;
+        };
 
 	   window.applyFilters = function() {
             let filtered = [...(window.allSetoranData || [])];
