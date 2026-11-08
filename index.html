@@ -796,14 +796,12 @@
         </div>
     </div>
     
-   
-   
    <!-- SCRIPTS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 1. Inisialisasi variabel global langsung membaca dari localStorage agar tidak tertimpa Admin
+        // Inisialisasi Sesi Global
         window.currentUserRole = localStorage.getItem('tahfiz_role') || 'Admin';
         window.currentUser = localStorage.getItem('tahfiz_user') || null;
         window.currentUserName = localStorage.getItem('tahfiz_name') || 'Administrator';
@@ -816,12 +814,88 @@
         window.allKelasData = [];
         window.allHalaqahData = [];
 
-        // 2. Pemulihan Sesi Saat Halaman Dimuat / Direfresh
+        // Fungsi Sinkronisasi Data Utama dari Firestore (Aman & Langsung Eksekusi)
+        window.fetchAllFirebaseData = async function() {
+            if (!window.db) return;
+            try {
+                // 1. Tarik Data Siswa
+                const snapStudents = await getDocs(collection(window.db, "students"));
+                window.allStudentsData = [];
+                snapStudents.forEach(d => window.allStudentsData.push({ id: d.id, ...d.data() }));
+                if (typeof window.renderStudentsTable === 'function') window.renderStudentsTable(window.allStudentsData);
+                if (typeof window.renderPromotionTable === 'function') window.renderPromotionTable(window.allStudentsData);
+                
+                const statTotalSiswa = document.getElementById('stat-total-siswa');
+                if (statTotalSiswa) statTotalSiswa.innerText = window.allStudentsData.length;
+
+                // 2. Tarik Data Kelas
+                const snapKelas = await getDocs(collection(window.db, "kelas"));
+                window.allKelasData = [];
+                snapKelas.forEach(d => window.allKelasData.push({ id: d.id, ...d.data() }));
+                
+                const tbodyKelas = document.getElementById('kelas-table-body');
+                if (tbodyKelas && window.allKelasData.length > 0) {
+                    const countMap = {};
+                    window.allStudentsData.forEach(s => { if(s.kelas) countMap[s.kelas] = (countMap[s.kelas] || 0) + 1; });
+                    tbodyKelas.innerHTML = window.allKelasData.map(k => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4 font-mono font-semibold">${k.idKelas || 'KLS-' + Math.floor(100+Math.random()*900)}</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">${k.name}</td>
+                            <td class="py-3 px-4">${k.tingkat || 'Kelas 7'}</td>
+                            <td class="py-3 px-4">${k.teacher || '-'}</td>
+                            <td class="py-3 px-4">${countMap[k.name] || 0} Siswa</td>
+                            <td class="py-3 px-4 text-center space-x-2">
+                                <button onclick="deleteKelas('${k.id}')" class="text-red-600 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // 3. Tarik Data Akun / Guru
+                const snapAccounts = await getDocs(collection(window.db, "accounts"));
+                window.allAccountsData = [];
+                snapAccounts.forEach(d => window.allAccountsData.push({ id: d.id, ...d.data() }));
+                if (typeof window.renderAccountsTable === 'function') window.renderAccountsTable(window.allAccountsData);
+                
+                const tbodyGuru = document.getElementById('guru-table-body');
+                if (tbodyGuru) {
+                    const gurus = window.allAccountsData.filter(acc => acc.role === 'GuruTahfiz' || acc.role === 'Admin');
+                    tbodyGuru.innerHTML = gurus.length === 0 ? '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data guru penguji.</td></tr>' : gurus.map(g => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4 font-mono font-semibold">${g.userId || 'G' + Math.floor(1000+Math.random()*9000)}</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">${g.name}</td>
+                            <td class="py-3 px-4 font-mono">${g.username}</td>
+                            <td class="py-3 px-4 font-mono">********</td>
+                            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-semibold">${g.linked || 'ALL'}</span></td>
+                            <td class="py-3 px-4 text-center space-x-2">
+                                <button onclick="deleteGuru('${g.id}')" class="text-red-600 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // 4. Tarik Data Halaqah
+                const snapHalaqah = await getDocs(collection(window.db, "halaqah"));
+                window.allHalaqahData = [];
+                snapHalaqah.forEach(d => window.allHalaqahData.push({ id: d.id, ...d.data() }));
+                if (typeof window.renderHalaqahTable === 'function') window.renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
+
+                // 5. Tarik Data Setoran (Mutabaah)
+                const snapSetoran = await getDocs(collection(window.db, "setoran"));
+                window.allSetoranData = [];
+                snapSetoran.forEach(d => window.allSetoranData.push({ id: d.id, ...d.data() }));
+                if (typeof window.applyFilters === 'function') window.applyFilters();
+
+                console.log("Semua data Firebase berhasil disinkronkan.");
+            } catch (err) {
+                console.error("Error fetching Firebase data:", err);
+            }
+        };
+
+        // Pemulihan Sesi Saat Halaman Dimuat / Direfresh
         document.addEventListener('DOMContentLoaded', () => {
             const savedRole = localStorage.getItem('tahfiz_role');
             const savedUser = localStorage.getItem('tahfiz_user');
-            const savedName = localStorage.getItem('tahfiz_name');
-            const savedLinked = localStorage.getItem('tahfiz_linked');
 
             const loginPage = document.getElementById('login-page');
             const appContainer = document.getElementById('app-container');
@@ -829,8 +903,8 @@
             if (savedRole && savedUser) {
                 window.currentUserRole = savedRole;
                 window.currentUser = savedUser;
-                window.currentUserName = savedName || savedUser;
-                window.currentUserLinked = savedLinked;
+                window.currentUserName = localStorage.getItem('tahfiz_name') || savedUser;
+                window.currentUserLinked = localStorage.getItem('tahfiz_linked') || 'ALL';
 
                 if (loginPage) loginPage.classList.add('hidden');
                 if (appContainer) appContainer.classList.remove('hidden');
@@ -840,18 +914,10 @@
                 if (displayNameEl) displayNameEl.innerText = window.currentUserName.toUpperCase();
                 if (displayRoleEl) displayRoleEl.innerText = formatRoleName(window.currentUserRole);
 
-                if (typeof window.applyRoleBasedSidebar === 'function') {
-                    window.applyRoleBasedSidebar(window.currentUserRole);
-                }
-                if (typeof window.setupDashboardByRole === 'function') {
-                    window.setupDashboardByRole();
-                }
-                if (typeof window.initSurahDropdown === 'function') {
-                    window.initSurahDropdown();
-                }
-                if (typeof window.switchTab === 'function') {
-                    window.switchTab('dashboard');
-                }
+                if (typeof window.applyRoleBasedSidebar === 'function') window.applyRoleBasedSidebar(window.currentUserRole);
+                if (typeof window.setupDashboardByRole === 'function') window.setupDashboardByRole();
+                if (typeof window.initSurahDropdown === 'function') window.initSurahDropdown();
+                if (typeof window.switchTab === 'function') window.switchTab('dashboard');
             } else {
                 if (loginPage) loginPage.classList.remove('hidden');
                 if (appContainer) appContainer.classList.add('hidden');
@@ -874,6 +940,9 @@
             window.db = db;
             document.getElementById('firebase-status').innerText = 'Firebase Terhubung';
             document.getElementById('firebase-status').className = 'text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium';
+            
+            // Panggil fungsi penarikan data setelah Firebase terhubung
+            setTimeout(window.fetchAllFirebaseData, 500);
         } catch (err) {
             console.error("Firebase Init Error:", err);
         }
@@ -890,7 +959,7 @@
             console.error("Firestore Error:", err);
         };
 
-        // 3. Fungsi Login Utama (Menyimpan sesi dengan benar ke localStorage)
+        // Fungsi Login Utama
         window.handleLogin = function(e) {
             e.preventDefault();
             const uInput = document.getElementById('login-username').value.trim().toLowerCase();
@@ -914,6 +983,7 @@
 
                 applyRoleBasedSidebar('Admin');
                 switchTab('dashboard');
+                window.fetchAllFirebaseData();
                 return;
             }
 
@@ -934,7 +1004,6 @@
                 window.currentUser = matchedAccount.name || matchedAccount.nama;
                 window.currentUserName = matchedAccount.name || matchedAccount.nama;
 
-                // Simpan sesi guru ke localStorage
                 localStorage.setItem('tahfiz_role', window.currentUserRole);
                 localStorage.setItem('tahfiz_user', window.currentUser);
                 localStorage.setItem('tahfiz_name', window.currentUserName);
@@ -949,6 +1018,7 @@
                 window.applyRoleBasedSidebar(window.currentUserRole);
                 window.setupDashboardByRole();
                 switchTab('dashboard');
+                window.fetchAllFirebaseData();
             } else {
                 alert("Username atau Password salah!");
             }
@@ -1006,7 +1076,6 @@
             }
         };
 
-        // 4. Fungsi Logout Bersih
         window.logout = function() {
             localStorage.clear();
             window.currentUserRole = null;
@@ -1016,58 +1085,6 @@
 
         window.handleLogout = function() {
             window.logout();
-        };
-		
-		let juzChartInstance = null;
-        let typeChartInstance = null;
-
-        window.updateDashboardStatsAndCharts = function(list) {
-            let filteredList = [...list];
-            let totalZiyadah = 0;
-            let totalMurajaah = 0;
-            let juzCounts = { '1': 0, '29': 0, '30': 0 };
-            
-            filteredList.forEach(data => {
-                if (data.jenis === 'Ziyadah') totalZiyadah++;
-                if (data.jenis === 'Murajaah') totalMurajaah++;
-                let juzKey = String(data.juz);
-                juzCounts[juzKey] = (juzCounts[juzKey] || 0) + 1;
-            });
-
-            const statZiyadah = document.getElementById('stat-ziyadah');
-            const statMurajaah = document.getElementById('stat-murajaah');
-            const statTotalSetoran = document.getElementById('stat-total-setoran');
-
-            if (statTotalSetoran) statTotalSetoran.innerText = filteredList.length;
-            if (statZiyadah) statZiyadah.innerText = totalZiyadah;
-            if (statMurajaah) statMurajaah.innerText = totalMurajaah;
-
-            // Render Grafik Chart.js jika elemen canvas tersedia
-            const ctxJuz = document.getElementById('juzChart')?.getContext('2d');
-            if(ctxJuz) {
-                if(juzChartInstance) juzChartInstance.destroy();
-                juzChartInstance = new Chart(ctxJuz, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Juz 1', 'Juz 29', 'Juz 30'],
-                        datasets: [{ label: 'Capaian Siswa', data: [juzCounts['1'] || 0, juzCounts['29'] || 0, juzCounts['30'] || 0], backgroundColor: '#1e293b', borderRadius: 6 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                });
-            }
-
-            const ctxType = document.getElementById('typeChart')?.getContext('2d');
-            if(ctxType) {
-                if(typeChartInstance) typeChartInstance.destroy();
-                typeChartInstance = new Chart(ctxType, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Ziyadah', 'Murajaah'],
-                        datasets: [{ data: [totalZiyadah, totalMurajaah], backgroundColor: ['#0ea5e9', '#10b981'] }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-            }
         };
 
         window.switchTab = function(tabId) {
@@ -1083,27 +1100,14 @@
             if(activeNav) activeNav.className = "flex items-center px-4 py-2.5 font-medium rounded-lg bg-emerald-600 text-white shadow-sm";
             document.getElementById('page-title').innerText = tabId.replace('-', ' ').toUpperCase();
 
-            // Panggil fungsi render data sesuai tab yang sedang diklik
-            if (tabId === 'dashboard') {
-                if (typeof window.setupDashboardByRole === 'function') window.setupDashboardByRole();
-            } else if (tabId === 'input-setoran') {
+            // Refresh data saat tab diklik
+            window.fetchAllFirebaseData();
+
+            if (tabId === 'input-setoran') {
                 if (typeof window.populateStudentDropdowns === 'function') window.populateStudentDropdowns(window.allStudentsData);
                 if (typeof window.initSurahDropdown === 'function') window.initSurahDropdown();
-            } else if (tabId === 'data-mutabaah') {
-                if (typeof window.applyFilters === 'function') window.applyFilters();
-                else if (typeof window.renderAllTable === 'function') window.renderAllTable(window.allSetoranData);
-            } else if (tabId === 'kelola-halaqah') {
-                if (typeof window.renderHalaqahTable === 'function') window.renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
-            } else if (tabId === 'kelola-kelas') {
-                // Kelas sudah berfungsi normal
-            } else if (tabId === 'kelola-guru') {
-                // Guru sudah berfungsi normal
-            } else if (tabId === 'kelola-siswa') {
-                if (typeof window.renderStudentsTable === 'function') window.renderStudentsTable(window.allStudentsData);
-            } else if (tabId === 'kenaikan-kelulusan') {
-                if (typeof window.renderPromotionTable === 'function') window.renderPromotionTable(window.allStudentsData);
-            } else if (tabId === 'kelola-akun') {
-                if (typeof window.renderAccountsTable === 'function') window.renderAccountsTable(window.allAccountsData);
+            } else if (tabId === 'dashboard') {
+                if (typeof window.setupDashboardByRole === 'function') window.setupDashboardByRole();
             }
         };
 
@@ -1306,6 +1310,7 @@
                 await addDoc(collection(db, "setoran"), dataSetoran);
                 alert("Alhamdulillah! Catatan setoran berhasil disimpan ke database.");
                 document.getElementById('setoran-form').reset();
+                window.fetchAllFirebaseData();
                 switchTab('data-mutabaah');
             } catch (err) {
                 console.error("Error menyimpan setoran:", err);
@@ -1313,26 +1318,178 @@
             }
         };
 
-       // Fungsi render tabel Data Mutabaah dengan pengaman data kosong
-       
-		
-		window.renderAllTable = function(list) {
-            // Ambil elemen tbody untuk Data Mutabaah DAN Dashboard sekaligus agar tidak pernah keliru
-            const tbodyAll = document.getElementById('all-mutabaah-table');
-            const tbodyDashboard = document.getElementById('dashboard-main-table-body');
-            
-            let displayList = list || window.allSetoranData || [];
+        window.renderStudentsTable = function(students) {
+            const tbody = document.getElementById('students-table-body');
+            if(!tbody) return;
+            if (students.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data siswa.</td></tr>'; return; }
+            tbody.innerHTML = students.map(s => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 font-mono font-semibold">${s.nis || '-'}</td>
+                    <td class="py-3 px-4 font-bold text-slate-800">${s.name}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${s.kelas || '-'}</span></td>
+                    <td class="py-3 px-4">${s.target || 'Juz 30'}</td>
+                    <td class="py-3 px-4">${s.guardian || '-'}</td>
+                    <td class="py-3 px-4"><a href="https://wa.me/${s.phone}" target="_blank" class="text-emerald-600 font-semibold hover:underline"><i class="fa-brands fa-whatsapp"></i> ${s.phone || '-'}</a></td>
+                    <td class="py-3 px-4 text-center space-x-2">
+                        <button onclick='openStudentModal("edit", ${JSON.stringify(s)})' class="text-blue-600 hover:underline"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteStudent('${s.id}')" class="text-red-600 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        };
 
-            // Filter khusus Guru Tahfiz
+        window.renderAccountsTable = function(accounts) {
+            const tbody = document.getElementById('accounts-table-body');
+            if(!tbody) return;
+            if(accounts.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data akun.</td></tr>'; return; }
+            tbody.innerHTML = accounts.map(a => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 font-mono font-semibold">${a.userId || 'U000'}</td>
+                    <td class="py-3 px-4">${a.username}</td>
+                    <td class="py-3 px-4 font-bold">${a.name}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full font-semibold bg-blue-100 text-blue-700">${a.role}</span></td>
+                    <td class="py-3 px-4">${a.linked || 'ALL'}</td>
+                    <td class="py-3 px-4 text-center space-x-2">
+                        <button onclick='openAccountModal("edit", ${JSON.stringify(a)})' class="text-blue-600 hover:underline"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteAccount('${a.id}')" class="text-red-600 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        window.renderPromotionTable = function(students) {
+            const tbody = document.getElementById('promotion-table-body');
+            if(!tbody) return;
+            if(students.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-400">Belum ada data siswa.</td></tr>'; return; }
+            tbody.innerHTML = students.map(s => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 font-bold">${s.name}</td>
+                    <td class="py-3 px-4">${s.kelas || '-'}</td>
+                    <td class="py-3 px-4">3 Juz</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-semibold">Naik Tingkat</span></td>
+                    <td class="py-3 px-4 text-center"><button onclick="alert('Status diperbarui.')" class="bg-emerald-600 text-white px-2 py-1 rounded">Proses</button></td>
+                </tr>
+            `).join('');
+        };
+
+        window.populateStudentDropdowns = function(students) {
+            const select = document.getElementById('input-siswa');
+            if(!select) return;
+
+            let studentsList = students || window.allStudentsData || [];
+
             if (window.currentUserRole && window.currentUserRole !== 'Admin') {
-                const currentName = (window.currentUser || window.currentUserName || '').trim().toLowerCase();
-                
                 const guruHalaqah = (window.allHalaqahData || []).filter(h => 
-                    (h.teacher && h.teacher.toLowerCase().includes(currentName)) ||
+                    (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
                     h.id === window.currentUserLinked
                 );
                 const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
-                
+                studentsList = studentsList.filter(s => halaqahIds.includes(s.idHalaqah));
+            }
+
+            select.innerHTML = '<option value="">-- Pilih Siswa --</option>' + 
+                studentsList.map(s => `<option value="${s.name}">${s.name} (${s.kelas || 'Tanpa Kelas'})</option>`).join('');
+            
+            select.onchange = window.handleStudentSelectionChange;
+        };
+
+        let juzChartInstance = null;
+        let typeChartInstance = null;
+
+        window.updateDashboardStatsAndCharts = function(list) {
+            let filteredList = [...list];
+            let totalZiyadah = 0;
+            let totalMurajaah = 0;
+            let juzCounts = { '1': 0, '29': 0, '30': 0 };
+            
+            filteredList.forEach(data => {
+                if (data.jenis === 'Ziyadah') totalZiyadah++;
+                if (data.jenis === 'Murajaah') totalMurajaah++;
+                let juzKey = String(data.juz);
+                juzCounts[juzKey] = (juzCounts[juzKey] || 0) + 1;
+            });
+
+            const statTotalSetoran = document.getElementById('stat-total-setoran');
+            const statZiyadah = document.getElementById('stat-ziyadah');
+            const statMurajaah = document.getElementById('stat-murajaah');
+
+            if(statTotalSetoran) statTotalSetoran.innerText = filteredList.length;
+            if(statZiyadah) statZiyadah.innerText = totalZiyadah;
+            if(statMurajaah) statMurajaah.innerText = totalMurajaah;
+
+            const ctxJuz = document.getElementById('juzChart')?.getContext('2d');
+            if(ctxJuz) {
+                if(juzChartInstance) juzChartInstance.destroy();
+                juzChartInstance = new Chart(ctxJuz, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Juz 1', 'Juz 29', 'Juz 30'],
+                        datasets: [{ label: 'Capaian Siswa', data: [juzCounts['1'] || 0, juzCounts['29'] || 0, juzCounts['30'] || 0], backgroundColor: '#1e293b', borderRadius: 6 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            }
+
+            const ctxType = document.getElementById('typeChart')?.getContext('2d');
+            if(ctxType) {
+                if(typeChartInstance) typeChartInstance.destroy();
+                typeChartInstance = new Chart(ctxType, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Ziyadah', 'Murajaah'],
+                        datasets: [{ data: [totalZiyadah, totalMurajaah], backgroundColor: ['#0ea5e9', '#10b981'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        };
+
+        window.renderHalaqahTable = function(halaqahList, studentsList) {
+            const tbody = document.getElementById('halaqah-table-body');
+            if(!tbody) return;
+            const halaqahArr = halaqahList || window.allHalaqahData || [];
+            const studentsArr = studentsList || window.allStudentsData || [];
+
+            if(halaqahArr.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada kelompok halaqah.</td></tr>'; 
+                return; 
+            }
+
+            const countMap = {};
+            studentsArr.forEach(s => {
+                if(s.idHalaqah) countMap[s.idHalaqah] = (countMap[s.idHalaqah] || 0) + 1;
+            });
+
+            tbody.innerHTML = halaqahArr.map(h => {
+                const terisi = countMap[h.id || h.idHalaqah] || 0;
+                const kapasitas = Number(h.capacity) || 15;
+                const persen = Math.round((terisi / kapasitas) * 100);
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-3 px-4 font-mono font-semibold">${h.idHalaqah || h.id || '-'}</td>
+                        <td class="py-3 px-4 font-bold text-slate-800">${h.name || '-'}</td>
+                        <td class="py-3 px-4">${h.teacher || '-'}</td>
+                        <td class="py-3 px-4">${kapasitas} Siswa</td>
+                        <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-700">${terisi} Siswa (${persen}%)</span></td>
+                        <td class="py-3 px-4 text-center space-x-2">
+                           <button onclick="openAturAnggotaModal('${h.id}', '${h.name || ''}', '${h.capacity || 15}')" class="px-2.5 py-1 bg-blue-50 text-blue-600 rounded font-semibold"><i class="fa-solid fa-users-gear mr-1"></i> Atur Anggota</button>
+                           <button onclick="deleteHalaqah('${h.id}')" class="text-red-600 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        };
+
+        window.renderAllTable = function(list) {
+            const tbodyAll = document.getElementById('all-mutabaah-table');
+            let displayList = list || window.allSetoranData || [];
+
+            if (window.currentUserRole && window.currentUserRole !== 'Admin') {
+                const currentName = (window.currentUser || window.currentUserName || '').trim().toLowerCase();
+                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                    (h.teacher && h.teacher.toLowerCase().includes(currentName)) || h.id === window.currentUserLinked
+                );
+                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
                 const santriBinaanNames = (window.allStudentsData || [])
                     .filter(s => halaqahIds.includes(s.idHalaqah))
                     .map(s => s.name.trim().toLowerCase());
@@ -1340,33 +1497,28 @@
                 displayList = displayList.filter(item => {
                     const siswaItem = (item.siswa || '').trim().toLowerCase();
                     const pengujiItem = (item.penguji || '').trim().toLowerCase();
-                    
-                    const isSiswaBinaan = santriBinaanNames.includes(siswaItem);
-                    const isPengujiSendiri = pengujiItem.includes(currentName) || currentName.includes(pengujiItem);
-
-                    return isSiswaBinaan || isPengujiSendiri;
+                    return santriBinaanNames.includes(siswaItem) || pengujiItem.includes(currentName);
                 });
             }
 
-            const htmlContent = displayList.length === 0 
-                ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data mutabaah yang tercatat.</td></tr>'
-                : displayList.map(item => `
-                    <tr class="hover:bg-slate-50">
-                        <td class="py-3 px-4 text-slate-500">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
-                        <td class="py-3 px-4 font-bold text-slate-800">${item.siswa || '-'}</td>
-                        <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${item.jenis || 'Ziyadah'}</span></td>
-                        <td class="py-3 px-4">${item.surah || '-'} (Ayat ${item.ayatMulai || 1}-${item.ayatSelesai || 1})</td>
-                        <td class="py-3 px-4">Juz ${item.juz || '-'}</td>
-                        <td class="py-3 px-4 font-semibold text-emerald-600">${item.kualitas || '-'}</td>
-                        <td class="py-3 px-4 text-slate-500">${item.penguji || '-'}</td>
-                    </tr>
-                `).join('');
-
-            if (tbodyAll) tbodyAll.innerHTML = htmlContent;
-            if (tbodyDashboard && window.currentUserRole === 'Admin') tbodyDashboard.innerHTML = htmlContent;
+            if (tbodyAll) {
+                tbodyAll.innerHTML = displayList.length === 0 
+                    ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data mutabaah yang tercatat.</td></tr>'
+                    : displayList.map(item => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4 text-slate-500">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">${item.siswa || '-'}</td>
+                            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${item.jenis || 'Ziyadah'}</span></td>
+                            <td class="py-3 px-4">${item.surah || '-'} (Ayat ${item.ayatMulai || 1}-${item.ayatSelesai || 1})</td>
+                            <td class="py-3 px-4">Juz ${item.juz || '-'}</td>
+                            <td class="py-3 px-4 font-semibold text-emerald-600">${item.kualitas || '-'}</td>
+                            <td class="py-3 px-4 text-slate-500">${item.penguji || '-'}</td>
+                        </tr>
+                    `).join('');
+            }
         };
 
-	   window.applyFilters = function() {
+        window.applyFilters = function() {
             let filtered = [...(window.allSetoranData || [])];
             const periode = document.getElementById('filter-periode')?.value || 'semua';
             const startDate = document.getElementById('filter-start-date')?.value;
@@ -1382,8 +1534,8 @@
             if (endDate) filtered = filtered.filter(item => item.timestamp && item.timestamp.split('T')[0] <= endDate);
 
             window.currentFilteredMutabaah = filtered;
-            updateDashboardStatsAndCharts(filtered);
-            renderAllTable(filtered);
+            window.updateDashboardStatsAndCharts(filtered);
+            window.renderAllTable(filtered);
         };
 
         window.handleStudentSelectionChange = function() {
@@ -1394,22 +1546,16 @@
             if (!selectSiswa || !infoBox || !infoText) return;
 
             const selectedStudentName = selectSiswa.value;
-
-            if (!selectedStudentName) {
-                infoBox.classList.add('hidden');
-                return;
-            }
+            if (!selectedStudentName) { infoBox.classList.add('hidden'); return; }
 
             const studentSetoran = (window.allSetoranData || []).filter(item => 
                 item.siswa && item.siswa.toLowerCase() === selectedStudentName.toLowerCase()
             );
 
             infoBox.classList.remove('hidden');
-
             if (studentSetoran.length > 0) {
                 const latest = studentSetoran[0];
                 const tgl = latest.timestamp ? new Date(latest.timestamp).toLocaleDateString('id-ID') : '-';
-                
                 infoText.innerHTML = `<b>Setoran Terakhir (${tgl}):</b> ${latest.jenis || 'Ziyadah'} - ${latest.surah} (Ayat ${latest.ayatMulai}-${latest.ayatSelesai}, Juz ${latest.juz}) • Kualitas: <b>${latest.kualitas}</b>`;
                 infoBox.className = "mt-1.5 text-[11px] text-blue-700 bg-blue-50 border border-blue-200 rounded-lg p-2 flex items-center space-x-1.5 shadow-sm";
             } else {
@@ -1460,209 +1606,32 @@
 
                 const tbody = document.getElementById('dashboard-main-table-body');
                 if(tbody) {
-                    if(binaanSiswa.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada santri di kelompok halaqah Anda.</td></tr>';
-                    } else {
-                        tbody.innerHTML = binaanSiswa.map((s, index) => `
-                            <tr class="hover:bg-slate-50">
-                                <td class="py-3 px-4 font-semibold">${index + 1}</td>
-                                <td class="py-3 px-4 font-mono">${s.nis || '-'}</td>
-                                <td class="py-3 px-4 font-bold text-slate-800">${s.name}</td>
-                                <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${s.kelas || '-'}</span></td>
-                                <td class="py-3 px-4">${s.target || 'Juz 30'}</td>
-                                <td class="py-3 px-4">${s.guardian || '-'} <br><a href="https://wa.me/${s.phone}" target="_blank" class="text-emerald-600 hover:underline"><i class="fa-brands fa-whatsapp"></i> ${s.phone || '-'}</a></td>
-                                <td class="py-3 px-4 text-center">
-                                    <button onclick="alert('Fitur cetak rapor hafalan untuk santri ${s.name}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold border border-slate-300">
-                                        <i class="fa-solid fa-file-lines text-blue-600 mr-1"></i> Rapor
-                                    </button>
-                                </td>
-                            </tr>
-                        `).join('');
-                    }
+                    tbody.innerHTML = binaanSiswa.length === 0 ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada santri di kelompok halaqah Anda.</td></tr>' : binaanSiswa.map((s, index) => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4 font-semibold">${index + 1}</td>
+                            <td class="py-3 px-4 font-mono">${s.nis || '-'}</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">${s.name}</td>
+                            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${s.kelas || '-'}</span></td>
+                            <td class="py-3 px-4">${s.target || 'Juz 30'}</td>
+                            <td class="py-3 px-4">${s.guardian || '-'} <br><a href="https://wa.me/${s.phone}" target="_blank" class="text-emerald-600 font-semibold hover:underline"><i class="fa-brands fa-whatsapp"></i> ${s.phone || '-'}</a></td>
+                            <td class="py-3 px-4 text-center">
+                                <button onclick="alert('Fitur cetak rapor hafalan untuk santri ${s.name}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold border border-slate-300">
+                                    <i class="fa-solid fa-file-lines text-blue-600 mr-1"></i> Rapor
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
                 }
-
             } else {
                 if(banner) banner.classList.add('hidden');
                 if(adminFilter) adminFilter.classList.remove('hidden');
                 if(adminCharts) adminCharts.classList.remove('hidden');
                 if(tableTitle) tableTitle.innerText = "Setoran Terbaru";
                 if(actionBtn) actionBtn.style.display = 'block';
-                if(tableHeader) {
-                    tableHeader.innerHTML = `
-                        <th class="py-3 px-4 font-semibold">Tanggal</th>
-                        <th class="py-3 px-4 font-semibold">Siswa</th>
-                        <th class="py-3 px-4 font-semibold">Surah & Ayat</th>
-                        <th class="py-3 px-4 font-semibold">Juz</th>
-                        <th class="py-3 px-4 font-semibold">Jenis</th>
-                        <th class="py-3 px-4 font-semibold">Kualitas</th>
-                        <th class="py-3 px-4 font-semibold">Penguji</th>
-                    `;
-                }
             }
         };
-
-        
-		// --- FIREBASE LISTENERS YANG AMAN & LENGKAP ---
-
-        // 1. Listener Koleksi Setoran (Data Mutabaah)
-        onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap) => {
-            updateFirebaseConnectedStatus();
-            window.allSetoranData = [];
-            snap.forEach(d => window.allSetoranData.push({ id: d.id, ...d.data() }));
-            if (typeof window.applyFilters === 'function') {
-                window.applyFilters();
-            }
-        }, handleFirestoreError);
-
-        // 2. Listener Koleksi Siswa
-        onSnapshot(query(collection(db, "students")), (snap) => {
-            updateFirebaseConnectedStatus();
-            window.allStudentsData = [];
-            snap.forEach(d => window.allStudentsData.push({ id: d.id, ...d.data() }));
-            
-            let activeStudents = window.allStudentsData;
-            if (window.currentUserRole && window.currentUserRole !== 'Admin') {
-                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
-                    (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
-                    h.id === window.currentUserLinked
-                );
-                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
-                activeStudents = activeStudents.filter(s => halaqahIds.includes(s.idHalaqah));
-            }
-
-            const statTotalSiswa = document.getElementById('stat-total-siswa');
-            if (statTotalSiswa) statTotalSiswa.innerText = activeStudents.length;
-
-            if (typeof window.renderStudentsTable === 'function') {
-                window.renderStudentsTable(window.allStudentsData);
-            }
-            if (typeof window.renderPromotionTable === 'function') {
-                window.renderPromotionTable(window.allStudentsData);
-            }
-            if (typeof window.populateStudentDropdowns === 'function') {
-                window.populateStudentDropdowns(activeStudents);
-            }
-        }, handleFirestoreError);
-
-        // 3. Listener Koleksi Kelas
-        onSnapshot(query(collection(db, "kelas")), (snap) => {
-            updateFirebaseConnectedStatus();
-            window.allKelasData = [];
-            snap.forEach(d => window.allKelasData.push({ id: d.id, ...d.data() }));
-            
-            const tbody = document.getElementById('kelas-table-body');
-            if(tbody) {
-                if(window.allKelasData.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data kelas.</td></tr>';
-                } else {
-                    const countMap = {};
-                    if(window.allStudentsData) {
-                        window.allStudentsData.forEach(s => {
-                            if(s.kelas) countMap[s.kelas] = (countMap[s.kelas] || 0) + 1;
-                        });
-                    }
-
-                    tbody.innerHTML = window.allKelasData.map(k => `
-                        <tr class="hover:bg-slate-50">
-                            <td class="py-3 px-4 font-mono font-semibold">${k.idKelas || 'KLS-' + Math.floor(100+Math.random()*900)}</td>
-                            <td class="py-3 px-4 font-bold text-slate-800">${k.name}</td>
-                            <td class="py-3 px-4">${k.tingkat || 'Kelas 7'}</td>
-                            <td class="py-3 px-4">${k.teacher || '-'}</td>
-                            <td class="py-3 px-4">${countMap[k.name] || 0} Siswa</td>
-                            <td class="py-3 px-4 text-center space-x-2">
-                                <button onclick="deleteKelas('${k.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
-                    `).join('');
-                }
-            }
-            
-            const studentClassSelect = document.getElementById('modal-student-class');
-            if(studentClassSelect) {
-                studentClassSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>' + 
-                    window.allKelasData.map(c => `<option value="${c.name}">${c.name} (Wali: ${c.teacher})</option>`).join('');
-            }
-
-            const linkedSelect = document.getElementById('modal-guru-linked');
-            if(linkedSelect) {
-                linkedSelect.innerHTML = '<option value="ALL">Semua Kelas (ALL / Lintas Kelas)</option>' + 
-                    window.allKelasData.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-            }
-        }, handleFirestoreError);
-
-        // 4. Listener Koleksi Accounts (Kelola Guru & Akun)
-        onSnapshot(query(collection(db, "accounts")), (snap) => {
-            updateFirebaseConnectedStatus();
-            window.allAccountsData = [];
-            snap.forEach(d => window.allAccountsData.push({ id: d.id, ...d.data() }));
-            
-            if(window.allAccountsData.length === 0) {
-                addDoc(collection(db, "accounts"), { userId: "U001", username: "admin", name: "Administrator Utama", role: "Admin", linked: "ALL", password: "admin" }).catch(err => console.log(err));
-            }
-            
-            if (typeof window.renderAccountsTable === 'function') {
-                window.renderAccountsTable(window.allAccountsData);
-            }
-            
-            const tbody = document.getElementById('guru-table-body');
-            if(tbody) {
-                const gurus = window.allAccountsData.filter(acc => acc.role === 'GuruTahfiz' || acc.role === 'Admin');
-                if(gurus.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data guru penguji.</td></tr>';
-                } else {
-                    tbody.innerHTML = gurus.map(g => `
-                        <tr class="hover:bg-slate-50">
-                            <td class="py-3 px-4 font-mono font-semibold">${g.userId || 'G' + Math.floor(1000+Math.random()*9000)}</td>
-                            <td class="py-3 px-4 font-bold text-slate-800">${g.name}</td>
-                            <td class="py-3 px-4 font-mono">${g.username}</td>
-                            <td class="py-3 px-4 font-mono">********</td>
-                            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-semibold">${g.linked || 'ALL'}</span></td>
-                            <td class="py-3 px-4 text-center space-x-2">
-                                <button onclick="deleteGuru('${g.id}')" class="text-red-600 hover:underline" title="Hapus"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
-                    `).join('');
-                }
-            }
-
-            const selectTeacher = document.getElementById('modal-halaqah-teacher');
-            if(selectTeacher) {
-                const teachers = window.allAccountsData.filter(acc => acc.role === 'GuruTahfiz' || acc.role === 'Admin');
-                selectTeacher.innerHTML = '<option value="">-- Pilih Guru --</option>' + teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-            }
-        }, handleFirestoreError);
-
-        // 5. Listener Koleksi Halaqah
-        onSnapshot(query(collection(db, "halaqah")), (snap) => {
-            window.allHalaqahData = [];
-            snap.forEach(d => window.allHalaqahData.push({ id: d.id, ...d.data() }));
-            if (typeof window.renderHalaqahTable === 'function') {
-                window.renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
-            }
-        }, handleFirestoreError);
-		
-		
-		// --- PAKSA RENDER SEMUA TABEL BEGITU DATA FIREBASE TERSEDIA ---
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                if (window.allStudentsData && window.allStudentsData.length > 0) {
-                    if (typeof window.renderStudentsTable === 'function') window.renderStudentsTable(window.allStudentsData);
-                    if (typeof window.renderPromotionTable === 'function') window.renderPromotionTable(window.allStudentsData);
-                }
-                if (window.allAccountsData && window.allAccountsData.length > 0) {
-                    if (typeof window.renderAccountsTable === 'function') window.renderAccountsTable(window.allAccountsData);
-                }
-                if (window.allHalaqahData && window.allHalaqahData.length > 0) {
-                    if (typeof window.renderHalaqahTable === 'function') window.renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
-                }
-                if (window.allSetoranData && window.allSetoranData.length > 0) {
-                    if (typeof window.applyFilters === 'function') window.applyFilters();
-                }
-            }, 1000); // Jeda 1 detik agar Firebase selesai menyinkronkan data awal
-        });
-		
-		
     </script>
+   
    
 </body>
 </html>
