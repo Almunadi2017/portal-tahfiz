@@ -1038,12 +1038,15 @@
             if (tabId === 'dashboard') {
                 window.setupDashboardByRole();
             }
-			
-			if (tabId === 'data-mutabaah') {
-         if (typeof window.applyFilters === 'function') {
-             window.applyFilters();
-         }
-     }
+            
+            // --- TAMBAHKAN BARIS INI AGAR DATA MUTABAAH OTOMATIS DIMUAT ---
+            if (tabId === 'data-mutabaah') {
+                if (typeof window.applyFilters === 'function') {
+                    window.applyFilters();
+                } else if (typeof window.renderAllTable === 'function') {
+                    window.renderAllTable(window.allSetoranData);
+                }
+            }
         };
 
         window.closeModal = function(id) { 
