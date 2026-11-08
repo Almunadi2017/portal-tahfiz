@@ -1253,7 +1253,8 @@
         };
 
        // Fungsi render tabel Data Mutabaah dengan pengaman data kosong
-       window.renderAllTable = function(list) {
+       
+		window.renderAllTable = function(list) {
          const tbody = document.getElementById('all-mutabaah-table');
          if(!tbody) return;
 
@@ -1307,7 +1308,8 @@
              </tr>
          `).join('');
      };
-        window.applyFilters = function() {
+
+	   window.applyFilters = function() {
             let filtered = [...(window.allSetoranData || [])];
             const periode = document.getElementById('filter-periode')?.value || 'semua';
             const startDate = document.getElementById('filter-start-date')?.value;
