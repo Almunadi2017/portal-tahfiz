@@ -1031,21 +1031,22 @@
             if(activeNav) activeNav.className = "flex items-center px-4 py-2.5 font-medium rounded-lg bg-emerald-600 text-white shadow-sm";
             document.getElementById('page-title').innerText = tabId.replace('-', ' ').toUpperCase();
 
-            if (tabId === 'input-setoran') {
-                window.populateStudentDropdowns(window.allStudentsData);
-                window.initSurahDropdown();
-            }
+            // Panggil fungsi render yang sesuai berdasarkan tab yang aktif
             if (tabId === 'dashboard') {
                 window.setupDashboardByRole();
-            }
-            
-            // --- TAMBAHKAN BARIS INI AGAR DATA MUTABAAH OTOMATIS DIMUAT ---
-            if (tabId === 'data-mutabaah') {
-                if (typeof window.applyFilters === 'function') {
-                    window.applyFilters();
-                } else if (typeof window.renderAllTable === 'function') {
-                    window.renderAllTable(window.allSetoranData);
-                }
+            } else if (tabId === 'input-setoran') {
+                window.populateStudentDropdowns(window.allStudentsData);
+                window.initSurahDropdown();
+            } else if (tabId === 'data-mutabaah') {
+                if (typeof window.applyFilters === 'function') window.applyFilters();
+            } else if (tabId === 'kelola-halaqah') {
+                if (typeof window.renderHalaqahTable === 'function') window.renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
+            } else if (tabId === 'kelola-siswa') {
+                if (typeof window.renderStudentsTable === 'function') window.renderStudentsTable(window.allStudentsData);
+            } else if (tabId === 'kelola-akun') {
+                if (typeof window.renderAccountsTable === 'function') window.renderAccountsTable(window.allAccountsData);
+            } else if (tabId === 'kenaikan-kelulusan') {
+                if (typeof window.renderPromotionTable === 'function') window.renderPromotionTable(window.allStudentsData);
             }
         };
 
