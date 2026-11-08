@@ -1447,22 +1447,20 @@
             }
         };
 
-        // Firestore Listeners
-        // Listener Firestore untuk koleksi 'setoran' dengan penanganan tabel kosong yang aman
-        // Listener Firestore untuk koleksi 'setoran'
-onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap) => {
-    updateFirebaseConnectedStatus();
-    window.allSetoranData = [];
-    snap.forEach(d => window.allSetoranData.push({ id: d.id, ...d.data() }));
+        
+		// --- FIREBASE LISTENERS YANG AMAN & LENGKAP ---
 
-    // Langsung perbarui tampilan tabel
-    if (typeof window.applyFilters === 'function') {
-        window.applyFilters();
-    } else if (typeof window.renderAllTable === 'function') {
-        window.renderAllTable(window.allSetoranData);
-    }
-}, handleFirestoreError);
+        // 1. Listener Koleksi Setoran (Data Mutabaah)
+        onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap) => {
+            updateFirebaseConnectedStatus();
+            window.allSetoranData = [];
+            snap.forEach(d => window.allSetoranData.push({ id: d.id, ...d.data() }));
+            if (typeof window.applyFilters === 'function') {
+                window.applyFilters();
+            }
+        }, handleFirestoreError);
 
+        // 2. Listener Koleksi Siswa
         onSnapshot(query(collection(db, "students")), (snap) => {
             updateFirebaseConnectedStatus();
             window.allStudentsData = [];
@@ -1481,17 +1479,24 @@ onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap
             const statTotalSiswa = document.getElementById('stat-total-siswa');
             if (statTotalSiswa) statTotalSiswa.innerText = activeStudents.length;
 
-            renderStudentsTable(window.allStudentsData);
-            renderPromotionTable(window.allStudentsData);
-            populateStudentDropdowns(activeStudents);
+            if (typeof window.renderStudentsTable === 'function') {
+                window.renderStudentsTable(window.allStudentsData);
+            }
+            if (typeof window.renderPromotionTable === 'function') {
+                window.renderPromotionTable(window.allStudentsData);
+            }
+            if (typeof window.populateStudentDropdowns === 'function') {
+                window.populateStudentDropdowns(activeStudents);
+            }
         }, handleFirestoreError);
 
+        // 3. Listener Koleksi Kelas
         onSnapshot(query(collection(db, "kelas")), (snap) => {
             updateFirebaseConnectedStatus();
-            const tbody = document.getElementById('kelas-table-body');
             window.allKelasData = [];
             snap.forEach(d => window.allKelasData.push({ id: d.id, ...d.data() }));
             
+            const tbody = document.getElementById('kelas-table-body');
             if(tbody) {
                 if(window.allKelasData.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data kelas.</td></tr>';
@@ -1531,14 +1536,19 @@ onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap
             }
         }, handleFirestoreError);
 
+        // 4. Listener Koleksi Accounts (Kelola Guru & Akun)
         onSnapshot(query(collection(db, "accounts")), (snap) => {
             updateFirebaseConnectedStatus();
             window.allAccountsData = [];
             snap.forEach(d => window.allAccountsData.push({ id: d.id, ...d.data() }));
+            
             if(window.allAccountsData.length === 0) {
                 addDoc(collection(db, "accounts"), { userId: "U001", username: "admin", name: "Administrator Utama", role: "Admin", linked: "ALL", password: "admin" }).catch(err => console.log(err));
             }
-            renderAccountsTable(window.allAccountsData);
+            
+            if (typeof window.renderAccountsTable === 'function') {
+                window.renderAccountsTable(window.allAccountsData);
+            }
             
             const tbody = document.getElementById('guru-table-body');
             if(tbody) {
@@ -1568,11 +1578,16 @@ onSnapshot(query(collection(db, "setoran"), orderBy("timestamp", "desc")), (snap
             }
         }, handleFirestoreError);
 
+        // 5. Listener Koleksi Halaqah
         onSnapshot(query(collection(db, "halaqah")), (snap) => {
             window.allHalaqahData = [];
             snap.forEach(d => window.allHalaqahData.push({ id: d.id, ...d.data() }));
-            renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
+            if (typeof window.renderHalaqahTable === 'function') {
+                window.renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
+            }
         }, handleFirestoreError);
+		
+		
     </script>
    
 </body>
