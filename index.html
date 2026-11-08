@@ -1589,6 +1589,26 @@
         }, handleFirestoreError);
 		
 		
+		// --- PAKSA RENDER SEMUA TABEL BEGITU DATA FIREBASE TERSEDIA ---
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (window.allStudentsData && window.allStudentsData.length > 0) {
+                    if (typeof window.renderStudentsTable === 'function') window.renderStudentsTable(window.allStudentsData);
+                    if (typeof window.renderPromotionTable === 'function') window.renderPromotionTable(window.allStudentsData);
+                }
+                if (window.allAccountsData && window.allAccountsData.length > 0) {
+                    if (typeof window.renderAccountsTable === 'function') window.renderAccountsTable(window.allAccountsData);
+                }
+                if (window.allHalaqahData && window.allHalaqahData.length > 0) {
+                    if (typeof window.renderHalaqahTable === 'function') window.renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
+                }
+                if (window.allSetoranData && window.allSetoranData.length > 0) {
+                    if (typeof window.applyFilters === 'function') window.applyFilters();
+                }
+            }, 1000); // Jeda 1 detik agar Firebase selesai menyinkronkan data awal
+        });
+		
+		
     </script>
    
 </body>
