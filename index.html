@@ -496,7 +496,11 @@
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
                         <div class="flex justify-between items-center">
                             <div><h3 class="font-bold text-slate-800 text-sm">Manajemen Akun Pengguna</h3><p class="text-xs text-slate-500">Kelola hak akses Admin, Guru Tahfiz, Wali Kelas, Kepala Sekolah, dan Orang Tua</p></div>
-                            <button onclick="openAccountModal('add')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-user-plus"></i><span>Tambah Akun</span></button>
+                            <button onclick="openAddAccountModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-sm">
+    <i class="fa-solid fa-plus"></i>
+    <span>Tambah Akun</span>
+</button>
+							
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse text-xs">
@@ -1920,6 +1924,16 @@
                 if(actionBtn) actionBtn.style.display = 'block';
             }
         };
+		
+		window.openAddAccountModal = function() {
+    // Jika Anda menggunakan modal popup:
+    const modal = document.getElementById('modal-tambah-akun'); // Sesuaikan ID modal Anda
+    if (modal) {
+        modal.classList.remove('hidden');
+    } else {
+        alert("Silakan pastikan elemen modal form tambah akun sudah tersedia di HTML.");
+    }
+};
 			
     </script>
    
