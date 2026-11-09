@@ -1314,6 +1314,15 @@
                 return;
             }
 
+            const now = new Date();
+            const timestampIso = now.toISOString();
+            // Format waktu: DD/MM/YYYY HH:MM WIB
+            const tglFormatted = String(now.getDate()).padStart(2, '0') + '/' + 
+                                 String(now.getMonth() + 1).padStart(2, '0') + '/' + 
+                                 now.getFullYear() + ' ' + 
+                                 String(now.getHours()).padStart(2, '0') + ':' + 
+                                 String(now.getMinutes()).padStart(2, '0') + ' WIB';
+
             const dataSetoran = {
                 siswa: siswaVal,
                 jenis: jenisVal,
@@ -1324,12 +1333,77 @@
                 kualitas: kualitasVal,
                 catatan: catatanVal,
                 penguji: window.currentUser || window.currentUserName || 'Guru Tahfiz',
-                timestamp: new Date().toISOString()
+                timestamp: timestampIso
             };
 
             try {
+                // 1. Simpan ke Firebase Firestore
                 await addDoc(collection(db, "setoran"), dataSetoran);
-                alert("Alhamdulillah! Catatan setoran berhasil disimpan ke database.");
+
+                // 2. Cari data siswa (Wali & No HP) dari window.allStudentsData
+                const targetStudent = (window.allStudentsData || []).find(s => 
+                    s.name && s.name.toLowerCase() === siswaVal.toLowerCase()
+                );
+
+                if (targetStudent && targetStudent.phone) {
+                    let nomorHpWali = targetStudent.phone.trim();
+                    // Pastikan format nomor HP diawali 08 (jika di database diawali 8, ubah ke 08)
+                    if (nomorHpWali.startsWith('8')) {
+                        nomorHpWali = '0' + nomorHpWali;
+                    }
+
+                    const namaWali = targetStudent.guardian || 'Orang Tua / Wali';
+                    const kelasSiswa = targetStudent.kelas || '-';
+                    const namaUstadz = window.currentUser || window.currentUserName || 'Guru Penguji';
+
+                    // 3. Susun Pesan sesuai dengan contoh yang Anda lampirkan
+                    const pesanWhatsApp = 
+`*LAPORAN MUTABA'AH TAHFIZUL QUR'AN*\n` +
+`*SMP SWASTA IT AL MUNADI MEDAN*\n\n` +
+`Assalamu'alaikum Warahmatullahi Wabarakatuh\n\n` +
+`Yth. Bunda *${namaWali}*,\n` +
+`Wali dari Ananda *${siswaVal.toUpperCase()}*\n` +
+`(Kelas ${kelasSiswa})\n\n` +
+`Alhamdulillah, berikut catatan capaian hafalan Al-Qur'an ananda hari ini:\n\n` +
+`📖 *Jenis Setoran:* ${jenisVal}\n` +
+`📜 *Surah & Ayat:* ${surahVal} (Ayat ${ayatMulaiVal} - ${ayatSelesaiVal})\n` +
+`📄 *Juz:* Juz ${juzVal}\n` +
+`⭐ *Predikat:* ${kualitasVal}\n` +
+`📝 *Catatan Pembimbing:*\n` +
+`${catatanVal || '-'}\n\n` +
+`👨‍🏫 *Ustadz/Ustazah:* ${namaUstadz}\n` +
+`📅 *Waktu:* ${tglFormatted}\n\n` +
+`Semoga ananda senantiasa diberikan kemudahan dan keistiqomahan dalam memelihara kalam Ilahi. Aamiin ya Rabbal 'Alamin.\n\n` +
+`Ayah/Bunda dapat memantau perkembangan hafalan ananda secara berkala di portal mutaba'ah sekolah.`;
+
+                    // 4. Kirim via Fonnte WA Gateway API
+                    const FONNTE_TOKEN = "jxY4aUsvLLBTBfMMzQUh"; // <-- Masukkan Token Fonnte Anda di sini
+                    
+                    const formData = new URLSearchParams();
+                    formData.append('target', nomorHpWali);
+                    formData.append('message', pesanWhatsApp);
+                    formData.append('countryCode', '62'); // Kode negara Indonesia
+
+                    fetch('https://api.fonnte.com/send', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': FONNTE_TOKEN
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        console.log("Respon Fonnte:", result);
+                    })
+                    .catch(err => {
+                        console.error("Gagal mengirim WhatsApp via Fonnte:", err);
+                    });
+
+                    alert("Alhamdulillah! Setoran berhasil disimpan dan pesan WhatsApp laporan telah dikirim otomatis ke orang tua.");
+                } else {
+                    alert("Setoran berhasil disimpan, namun nomor WhatsApp wali santri tidak ditemukan di data siswa.");
+                }
+
                 document.getElementById('setoran-form').reset();
                 window.fetchAllFirebaseData();
                 switchTab('data-mutabaah');
