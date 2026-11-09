@@ -143,7 +143,7 @@
                 <div id="tab-dashboard" class="space-y-6">
                     
                     <!-- KARTU SAMBUTAN & RINGKASAN HALAQAH (KHUSUS GURU TAHFIZ) -->
-                    <div id="guru-halaqah-banner" class="hidden bg-gradient-to-r from-slate-900 via-slate-800 to-green-950 text-white p-6 rounded-2xl shadow-lg mb-6 border-l-4 border-amber-500 w-ful">
+                    <div id="guru-halaqah-banner" class="hidden bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-6 rounded-2xl shadow-lg mb-6 border-l-4 border-amber-500 w-ful">
                         <div class="flex items-center space-x-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
                             <i class="fa-solid fa-people-roof"></i><span>Kelompok Halaqah</span>
                         </div>
@@ -1067,6 +1067,31 @@
             } else {
                 alert("Username, NIS, atau Password salah!");
             }
+			
+			if (uInput === 'kepsek' && pInput === 'kepsek') {
+                window.currentUser = 'Kepala Sekolah';
+                window.currentUserRole = 'KepalaSekolah';
+                window.currentUserLinked = 'ALL';
+                window.currentUserName = 'Kepala Sekolah IT Al Munadi';
+                
+                localStorage.setItem('tahfiz_role', 'KepalaSekolah');
+                localStorage.setItem('tahfiz_user', 'Kepala Sekolah');
+                localStorage.setItem('tahfiz_name', 'Kepala Sekolah IT Al Munadi');
+                localStorage.setItem('tahfiz_linked', 'ALL');
+                
+                document.getElementById('user-display-name').innerText = 'KEPALA SEKOLAH';
+                document.getElementById('user-role').innerText = 'Pimpinan / Monev Eksekutif';
+                
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+
+                window.applyRoleBasedSidebar('KepalaSekolah');
+                window.setupDashboardByRole();
+                switchTab('dashboard');
+                window.fetchAllFirebaseData();
+                return;
+            }
+			
         };
 
         window.applyRoleBasedSidebar = function(role) {
@@ -1087,26 +1112,22 @@
 
             const r = role ? role.toLowerCase().trim() : '';
             let allowedNavs = [];
-            if (r === 'admin' || r.includes('administrator')) {
-                allowedNavs = allNavs;
-            } else if (r.includes('guru') || r.includes('tahfiz') || r.includes('penguji')) {
+
+            if (r.includes('admin')) {
+                allowedNavs = ['nav-dashboard', 'nav-setoran', 'nav-mutabaah', 'nav-halaqah', 'nav-kelas', 'nav-guru', 'nav-siswa', 'nav-kenaikan', 'nav-akun', 'nav-monev', 'nav-ganti-password'];
+            } else if (r.includes('guru') || r.includes('penguji')) {
                 allowedNavs = ['nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 'nav-ganti-password'];
-            } else if (r.includes('walikelas') || r.includes('wali kelas')) {
+            } else if (r.includes('orangtua') || r.includes('walimurid')) {
                 allowedNavs = ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'];
-            } else if (r.includes('kepalasekolah') || r.includes('kepala sekolah')) {
-                allowedNavs = ['nav-dashboard', 'nav-data-mutabaah', 'nav-monev-eksekutif', 'nav-ganti-password'];
-				} else if (r.includes('orangtua') || r.includes('walimurid')) {
+            } else if (r.includes('kepala') || r.includes('kepsek') || r.includes('monev')) {
                 allowedNavs = ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'];
-            }
-			else {
-                allowedNavs = ['nav-dashboard', 'nav-ganti-password'];
             }
 
             allowedNavs.forEach(navId => {
                 const el = document.getElementById(navId);
-                if(el) {
+                if (el) {
                     el.classList.remove('hidden');
-                    el.style.display = 'flex';
+                    el.style.display = 'block';
                 }
             });
         };
@@ -1655,23 +1676,57 @@
         };
 
         window.applyFilters = function() {
-            let filtered = [...(window.allSetoranData || [])];
-            const periode = document.getElementById('filter-periode')?.value || 'semua';
-            const startDate = document.getElementById('filter-start-date')?.value;
-            const endDate = document.getElementById('filter-end-date')?.value;
-            const todayStr = new Date().toISOString().split('T')[0];
+            let filtered = window.allSetoranData || [];
+            
+            // Filter Periode
+            const periode = document.getElementById('filter-periode')?.value;
+            const tglDari = document.getElementById('filter-dari')?.value;
+            const tglSampai = document.getElementById('filter-sampai')?.value;
 
-            if (periode === 'hari-ini') filtered = filtered.filter(item => item.timestamp && item.timestamp.startsWith(todayStr));
-            else if (periode === 'bulan-ini') {
-                const currentMonth = todayStr.substring(0, 7);
-                filtered = filtered.filter(item => item.timestamp && item.timestamp.startsWith(currentMonth));
+            if (periode === 'hari-ini') {
+                const todayStr = new Date().toISOString().split('T')[0];
+                filtered = filtered.filter(i => i.timestamp && i.timestamp.startsWith(todayStr));
+            } else if (periode === 'bulan-ini') {
+                const currentMonth = new Date().toISOString().substring(0, 7);
+                filtered = filtered.filter(i => i.timestamp && i.timestamp.startsWith(currentMonth));
             }
-            if (startDate) filtered = filtered.filter(item => item.timestamp && item.timestamp.split('T')[0] >= startDate);
-            if (endDate) filtered = filtered.filter(item => item.timestamp && item.timestamp.split('T')[0] <= endDate);
 
-            window.currentFilteredMutabaah = filtered;
+            if (tglDari && tglSampai) {
+                const dStart = new Date(tglDari);
+                const dEnd = new Date(tglSampai);
+                dEnd.setHours(23, 59, 59);
+                filtered = filtered.filter(i => {
+                    const t = new Date(i.timestamp);
+                    return t >= dStart && t <= dEnd;
+                });
+            }
+
+            // Filter Khusus Kepala Sekolah (Kelas, Halaqah, Nama Siswa)
+            const fKelas = document.getElementById('filter-kepsek-kelas')?.value;
+            const fHalaqah = document.getElementById('filter-kepsek-halaqah')?.value;
+            const fSiswaText = document.getElementById('filter-kepsek-siswa')?.value?.toLowerCase();
+
+            if (fKelas) {
+                const siswaKelasNames = (window.allStudentsData || []).filter(s => s.kelas === fKelas).map(s => s.name.toLowerCase());
+                filtered = filtered.filter(i => siswaKelasNames.includes((i.siswa || '').toLowerCase()));
+            }
+
+            if (fHalaqah) {
+                const siswaHalaqahNames = (window.allStudentsData || []).filter(s => s.idHalaqah === fHalaqah).map(s => s.name.toLowerCase());
+                filtered = filtered.filter(i => siswaHalaqahNames.includes((i.siswa || '').toLowerCase()));
+            }
+
+            if (fSiswaText) {
+                filtered = filtered.filter(i => (i.siswa || '').toLowerCase().includes(fSiswaText));
+            }
+
+            // Perbarui statistik, grafik, dan tabel sesuai hasil filter
             window.updateDashboardStatsAndCharts(filtered);
-            window.renderAllTable(filtered);
+            if (window.currentUserRole === 'KepalaSekolah') {
+                window.renderKepsekTable(filtered);
+            } else if (window.currentUserRole === 'Admin') {
+                window.renderAllTable(filtered);
+            }
         };
 
         window.handleStudentSelectionChange = function() {
