@@ -1701,100 +1701,169 @@
         };
 
 			window.setupDashboardByRole = function() {
-         const banner = document.getElementById('guru-halaqah-banner');
-         const adminFilter = document.getElementById('admin-filter-section');
-         const adminCharts = document.getElementById('admin-charts-section');
-         const statsContainer = document.getElementById('stats-cards-container'); // <-- Tambahan elemen kotak statistik
-		 // Fungsi Interaktif Pemeriksaan oleh Wali
-        window.togglePemeriksaanWali = async function(docId) {
-            try {
-                const setoranRef = doc(db, "setoran", docId);
-                const currentSetoran = (window.allSetoranData || []).find(s => s.id === docId);
+            const banner = document.getElementById('guru-halaqah-banner');
+            const adminFilter = document.getElementById('admin-filter-section');
+            const adminCharts = document.getElementById('admin-charts-section');
+            const statsContainer = document.getElementById('stats-cards-container');
+            const tableTitle = document.getElementById('dashboard-table-title');
+            const actionBtn = document.getElementById('dashboard-action-btn');
+            const tableHeader = document.getElementById('dashboard-table-header');
+            const mainTbody = document.getElementById('dashboard-main-table-body');
+            
+            const role = window.currentUserRole ? window.currentUserRole.trim() : '';
+
+            if (role === 'OrangTua') {
+                // TAMPILAN KHUSUS WALI SISWA / ORANG TUA
+                if(banner) banner.classList.add('hidden');
+                if(adminFilter) adminFilter.classList.add('hidden');
+                if(adminCharts) adminCharts.classList.remove('hidden'); // Tampilkan grafik untuk orang tua
+                if(statsContainer) statsContainer.classList.remove('hidden'); // Tampilkan statistik untuk orang tua
+
+                const childName = (window.currentUserLinked || '').trim();
+                const childData = (window.allStudentsData || []).find(s => s.name && s.name.toLowerCase() === childName.toLowerCase()) || {
+                    name: childName,
+                    nis: '2026001',
+                    kelas: 'VII-1',
+                    target: 'Juz 30',
+                    guardian: window.currentUser || 'Wali Murid'
+                };
+
+                // Sisipkan Banner Profil Santri di atas statistik jika belum ada
+                let profileBanner = document.getElementById('parent-child-profile-banner');
+                if (!profileBanner) {
+                    profileBanner = document.createElement('div');
+                    profileBanner.id = 'parent-child-profile-banner';
+                    profileBanner.className = "bg-slate-800 text-white p-6 rounded-2xl shadow-md mb-6 space-y-2 border-l-4 border-amber-500";
+                    statsContainer.parentNode.insertBefore(profileBanner, statsContainer);
+                }
+                profileBanner.innerHTML = `
+                    <div class="flex items-center space-x-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
+                        <i class="fa-solid fa-id-card"></i><span>PROFIL SANTRI</span>
+                    </div>
+                    <h3 class="text-2xl font-bold">${childData.name.toUpperCase()}</h3>
+                    <p class="text-xs text-slate-300 font-medium">NIS: ${childData.nis || '-'} • Kelas: ${childData.kelas || '-'} • Target: ${childData.target || 'Juz 30'}</p>
+                `;
+
+                // Filter setoran khusus anak ini
+                const childSetoran = (window.allSetoranData || []).filter(item => 
+                    item.siswa && item.siswa.toLowerCase() === childName.toLowerCase()
+                );
+
+                const totalZiyadah = childSetoran.filter(i => i.jenis === 'Ziyadah').length;
+                const totalMurajaah = childSetoran.filter(i => i.jenis === 'Murajaah').length;
+
+                // Update angka statistik anak
+                const statSiswa = document.getElementById('stat-total-siswa');
+                const statSetoran = document.getElementById('stat-total-setoran');
+                const statZiyadah = document.getElementById('stat-ziyadah');
+                const statMurajaah = document.getElementById('stat-murajaah');
+
+                if(statSiswa) statSiswa.innerText = "1";
+                if(statSetoran) statSetoran.innerText = childSetoran.length;
+                if(statZiyadah) statZiyadah.innerText = totalZiyadah;
+                if(statMurajaah) statMurajaah.innerText = totalMurajaah;
+
+                // Perbarui Grafik & Tabel Setoran Terbaru untuk Orang Tua
+                window.updateDashboardStatsAndCharts(childSetoran);
+
+                if(tableTitle) tableTitle.innerText = "Setoran Terbaru Ananda";
+                if(actionBtn) actionBtn.style.display = 'none';
+
+                if(tableHeader) {
+                    tableHeader.innerHTML = `
+                        <th class="py-3 px-4 font-semibold">Tanggal</th>
+                        <th class="py-3 px-4 font-semibold">Siswa</th>
+                        <th class="py-3 px-4 font-semibold">Surah & Ayat</th>
+                        <th class="py-3 px-4 font-semibold">Juz</th>
+                        <th class="py-3 px-4 font-semibold">Jenis</th>
+                        <th class="py-3 px-4 font-semibold">Kualitas</th>
+                        <th class="py-3 px-4 font-semibold">Penguji</th>
+                    `;
+                }
+
+                if(mainTbody) {
+                    mainTbody.innerHTML = childSetoran.length === 0 
+                        ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada catatan setoran hafalan untuk ananda.</td></tr>' 
+                        : childSetoran.map(item => `
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 text-slate-500">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
+                                <td class="py-3 px-4 font-bold text-slate-800">${item.siswa || '-'}</td>
+                                <td class="py-3 px-4">${item.surah || '-'} (Ayat ${item.ayatMulai || 1}-${item.ayatSelesai || 1})</td>
+                                <td class="py-3 px-4">Juz ${item.juz || '-'}</td>
+                                <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${item.jenis || 'Ziyadah'}</span></td>
+                                <td class="py-3 px-4 font-semibold text-emerald-600">${item.kualitas || '-'}</td>
+                                <td class="py-3 px-4 text-slate-500">${item.penguji || '-'}</td>
+                            </tr>
+                        `).join('');
+                }
+
+            } else if (role !== 'Admin') {
+                // TAMPILAN KHUSUS GURU TAHFIZ
+                let profileBanner = document.getElementById('parent-child-profile-banner');
+                if (profileBanner) profileBanner.remove();
+
+                if(banner) banner.classList.remove('hidden');
+                if(adminFilter) adminFilter.classList.add('hidden');
+                if(adminCharts) adminCharts.classList.add('hidden');
+                if(statsContainer) statsContainer.classList.add('hidden');
+
+                document.getElementById('banner-guru-name').innerText = window.currentUser || window.currentUserName || 'Ustadz Pembimbing';
                 
-                if (!currentSetoran) return;
+                const guruHalaqah = (window.allHalaqahData || []).filter(h => 
+                    (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
+                    h.id === window.currentUserLinked
+                );
+                const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
+                const binaanSiswa = (window.allStudentsData || []).filter(s => halaqahIds.includes(s.idHalaqah));
+                
+                document.getElementById('banner-santri-count').innerText = `Santri Binaan: ${binaanSiswa.length} Santri`;
 
-                const isChecked = currentSetoran.checkedByParent;
-                const nowStr = new Date().toLocaleDateString('id-ID') + ' ' + new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+                if(tableTitle) tableTitle.innerText = "Daftar Santri Binaan Kelompok Halaqah Anda";
+                if(actionBtn) actionBtn.style.display = 'none';
 
-                await updateDoc(setoranRef, {
-                    checkedByParent: !isChecked,
-                    checkedParentTime: !isChecked ? nowStr : null
-                });
+                if(tableHeader) {
+                    tableHeader.innerHTML = `
+                        <th class="py-3 px-4 font-semibold">No</th>
+                        <th class="py-3 px-4 font-semibold">NIS</th>
+                        <th class="py-3 px-4 font-semibold">Nama Santri</th>
+                        <th class="py-3 px-4 font-semibold">Kelas</th>
+                        <th class="py-3 px-4 font-semibold">Target Juz</th>
+                        <th class="py-3 px-4 font-semibold">Wali & Kontak</th>
+                        <th class="py-3 px-4 font-semibold text-center">Aksi</th>
+                    `;
+                }
 
-                alert(!isChecked ? "Alhamdulillah, setoran ditandai sudah diperiksa." : "Status pemeriksaan dibatalkan.");
-                window.fetchAllFirebaseData();
-            } catch (err) {
-                console.error("Gagal memperbarui status pemeriksaan:", err);
-                alert("Terjadi kesalahan saat memperbarui status.");
+                if(mainTbody) {
+                    mainTbody.innerHTML = binaanSiswa.length === 0 ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada santri di kelompok halaqah Anda.</td></tr>' : binaanSiswa.map((s, index) => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4 font-semibold">${index + 1}</td>
+                            <td class="py-3 px-4 font-mono">${s.nis || '-'}</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">${s.name}</td>
+                            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${s.kelas || '-'}</span></td>
+                            <td class="py-3 px-4">${s.target || 'Juz 30'}</td>
+                            <td class="py-3 px-4">${s.guardian || '-'} <br><a href="https://wa.me/${s.phone}" target="_blank" class="text-emerald-600 font-semibold hover:underline"><i class="fa-brands fa-whatsapp"></i> ${s.phone || '-'}</a></td>
+                            <td class="py-3 px-4 text-center">
+                                <button onclick="alert('Fitur cetak rapor hafalan untuk santri ${s.name}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold border border-slate-300">
+                                    <i class="fa-solid fa-file-lines text-blue-600 mr-1"></i> Rapor
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } else {
+                // TAMPILAN ADMIN
+                let profileBanner = document.getElementById('parent-child-profile-banner');
+                if (profileBanner) profileBanner.remove();
+
+                if(banner) banner.classList.add('hidden');
+                if(adminFilter) adminFilter.classList.remove('hidden');
+                if(adminCharts) adminCharts.classList.remove('hidden');
+                if(statsContainer) statsContainer.classList.remove('hidden');
+                if(tableTitle) tableTitle.innerText = "Setoran Terbaru";
+                if(actionBtn) actionBtn.style.display = 'block';
             }
         };
-		 
-		 
-         const tableTitle = document.getElementById('dashboard-table-title');
-         const actionBtn = document.getElementById('dashboard-action-btn');
-         const tableHeader = document.getElementById('dashboard-table-header');
-
-         if (window.currentUserRole && window.currentUserRole !== 'Admin') {
-             // TAMPILAN KHUSUS GURU TAHFIZ
-             if(banner) banner.classList.remove('hidden');
-             if(adminFilter) adminFilter.classList.add('hidden');
-             if(adminCharts) adminCharts.classList.add('hidden');
-             if(statsContainer) statsContainer.classList.add('hidden'); // <-- Sembunyikan 4 kotak statistik untuk guru
-
-             document.getElementById('banner-guru-name').innerText = window.currentUser || window.currentUserName || 'Ustadz Pembimbing';
-
-             const guruHalaqah = (window.allHalaqahData || []).filter(h => 
-                 (h.teacher && h.teacher.toLowerCase().includes((window.currentUser || '').toLowerCase())) ||
-                 h.id === window.currentUserLinked
-             );
-             const halaqahIds = guruHalaqah.map(h => h.id || h.idHalaqah);
-             const binaanSiswa = (window.allStudentsData || []).filter(s => halaqahIds.includes(s.idHalaqah));
-
-             document.getElementById('banner-santri-count').innerText = `Santri Binaan: ${binaanSiswa.length} Santri`;
-
-             if(tableTitle) tableTitle.innerText = "Daftar Santri Binaan Kelompok Halaqah Anda";
-             if(actionBtn) actionBtn.style.display = 'none';
-
-             if(tableHeader) {
-                 tableHeader.innerHTML = `
-                     <th class="py-3 px-4 font-semibold">No</th>
-                     <th class="py-3 px-4 font-semibold">NIS</th>
-                     <th class="py-3 px-4 font-semibold">Nama Santri</th>
-                     <th class="py-3 px-4 font-semibold">Kelas</th>
-                     <th class="py-3 px-4 font-semibold">Target Juz</th>
-                     <th class="py-3 px-4 font-semibold">Wali & Kontak</th>
-                     <th class="py-3 px-4 font-semibold text-center">Aksi</th>
-                 `;
-             }
-
-             const tbody = document.getElementById('dashboard-main-table-body');
-             if(tbody) {
-                 tbody.innerHTML = binaanSiswa.length === 0 ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada santri di kelompok halaqah Anda.</td></tr>' : binaanSiswa.map((s, index) => `
-                     <tr class="hover:bg-slate-50">
-                         <td class="py-3 px-4 font-semibold">${index + 1}</td>
-                         <td class="py-3 px-4 font-mono">${s.nis || '-'}</td>
-                         <td class="py-3 px-4 font-bold text-slate-800">${s.name}</td>
-                         <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${s.kelas || '-'}</span></td>
-                         <td class="py-3 px-4">${s.target || 'Juz 30'}</td>
-                         <td class="py-3 px-4">${s.guardian || '-'} <br><a href="https://wa.me/${s.phone}" target="_blank" class="text-emerald-600 hover:underline"><i class="fa-brands fa-whatsapp"></i> ${s.phone || '-'}</a></td>
-                         <td class="py-3 px-4 text-center">
-                             <button onclick="alert('Fitur cetak rapor hafalan untuk santri ${s.name}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-semibold border border-slate-300">
-                                 <i class="fa-solid fa-file-lines text-blue-600 mr-1"></i> Rapor
-                             </button>
-                         </td>
-                     </tr>
-                 `).join('');
-             }
-         } else {
-             // TAMPILAN UNTUK ADMIN (Tetap Muncul)
-             if(banner) banner.classList.add('hidden');
-             if(adminFilter) adminFilter.classList.remove('hidden');
-             if(adminCharts) adminCharts.classList.remove('hidden');
-             if(statsContainer) statsContainer.classList.remove('hidden'); // <-- Tampilkan kembali untuk Admin
-             if(tableTitle) tableTitle.innerText = "Setoran Terbaru";
-             if(actionBtn) actionBtn.style.display = 'block';
-         }
-     };
+			
     </script>
    
    
