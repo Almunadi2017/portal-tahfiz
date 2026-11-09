@@ -1734,7 +1734,7 @@
                     profileBanner = document.createElement('div');
                     profileBanner.id = 'parent-child-profile-banner';
                     // Tambahkan kelas gradasi di sini: bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950
-                    profileBanner.className = "bg-gradient-to-r from-slate-900 via-slate-600 to-emerald-750 text-white p-6 rounded-2xl shadow-lg mb-6 flex flex-col md:flex-row items-start md:items-center justify-between border-l-4 border-amber-500 w-full gap-4";
+                    profileBanner.className = "bg-gradient-to-r from-slate-900 via-slate-750 to-emerald-700 text-white p-6 rounded-2xl shadow-lg mb-6 flex flex-col md:flex-row items-start md:items-center justify-between border-l-4 border-amber-500 w-full gap-4";
                     
                     const container = tableTitle ? tableTitle.parentNode.parentNode : mainTbody.parentNode;
                     container.insertBefore(profileBanner, container.firstChild);
@@ -1807,11 +1807,7 @@
                 // TAMPILAN KHUSUS GURU TAHFIZ
                 let profileBanner = document.getElementById('parent-child-profile-banner');
                 if (profileBanner) profileBanner.remove();
-				// TAMPILAN KHUSUS GURU TAHFIZ: Berikan gradasi warna yang sama
-                if(banner) {
-                    banner.classList.remove('hidden');
-                   banner.className = "bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-750 text-white p-6 rounded-2xl shadow-lg mb-6 border-l-4 border-amber-500 w-full";
-                }
+
                 if(banner) banner.classList.remove('hidden');
                 if(adminFilter) adminFilter.classList.add('hidden');
                 if(adminCharts) adminCharts.classList.add('hidden');
