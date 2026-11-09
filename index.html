@@ -1095,26 +1095,22 @@
         };
 
         window.applyRoleBasedSidebar = function(role) {
-            const allNavs = [
-                'nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 
-                'nav-kelola-halaqah', 'nav-kelola-kelas', 'nav-kelola-guru', 
-                'nav-kelola-siswa', 'nav-kenaikan-kelulusan', 'nav-kelola-akun', 
-                'nav-monev-eksekutif', 'nav-ganti-password'
-            ];
-
-            allNavs.forEach(navId => {
-                const el = document.getElementById(navId);
-                if(el) {
-                    el.classList.add('hidden');
-                    el.style.display = 'none';
-                }
+            const allNavs = document.querySelectorAll('.sidebar-nav-item');
+            allNavs.forEach(nav => {
+                nav.classList.add('hidden');
+                nav.style.display = 'none';
             });
 
             const r = role ? role.toLowerCase().trim() : '';
             let allowedNavs = [];
 
-            if (r.includes('admin')) {
-                allowedNavs = ['nav-dashboard', 'nav-setoran', 'nav-mutabaah', 'nav-halaqah', 'nav-kelas', 'nav-guru', 'nav-siswa', 'nav-kenaikan', 'nav-akun', 'nav-monev', 'nav-ganti-password'];
+            if (r.includes('admin') || r.includes('administrator')) {
+                // Administrator memegang akses penuh ke seluruh menu
+                allowedNavs = [
+                    'nav-dashboard', 'nav-setoran', 'nav-mutabaah', 
+                    'nav-halaqah', 'nav-kelas', 'nav-guru', 'nav-siswa', 
+                    'nav-kenaikan', 'nav-akun', 'nav-monev', 'nav-ganti-password'
+                ];
             } else if (r.includes('guru') || r.includes('penguji')) {
                 allowedNavs = ['nav-dashboard', 'nav-input-setoran', 'nav-data-mutabaah', 'nav-ganti-password'];
             } else if (r.includes('orangtua') || r.includes('walimurid')) {
