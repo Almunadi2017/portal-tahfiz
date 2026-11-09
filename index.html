@@ -1008,12 +1008,36 @@
                 return;
             }
 
-            if (!window.allAccountsData || window.allAccountsData.length === 0) {
-                alert("Data akun sedang disinkronisasi. Mohon tunggu 2 detik lalu klik Login kembali.");
+            // Cek apakah login menggunakan NIS Siswa (Role OrangTua)
+            const matchedStudent = (window.allStudentsData || []).find(s => 
+                s.nis && String(s.nis).trim().toLowerCase() === uInput && String(s.nis).trim() === pInput
+            );
+
+            if (matchedStudent) {
+                window.currentUserRole = 'OrangTua';
+                window.currentUserLinked = matchedStudent.name; // Simpan nama siswa yang diakses
+                window.currentUser = matchedStudent.guardian || 'Wali Murid';
+                window.currentUserName = `${matchedStudent.guardian || 'Wali'} (Wali dari ${matchedStudent.name})`;
+
+                localStorage.setItem('tahfiz_role', 'OrangTua');
+                localStorage.setItem('tahfiz_user', window.currentUser);
+                localStorage.setItem('tahfiz_name', window.currentUserName);
+                localStorage.setItem('tahfiz_linked', window.currentUserLinked);
+
+                document.getElementById('user-display-name').innerText = window.currentUserName.toUpperCase();
+                document.getElementById('user-role').innerText = 'Orang Tua / Wali Siswa';
+
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+
+                window.applyRoleBasedSidebar('OrangTua');
+                window.setupDashboardByRole();
+                switchTab('dashboard');
                 return;
             }
 
-            const matchedAccount = window.allAccountsData.find(acc => {
+            // Cek ke data akun database (Guru/Admin/Lainnya)
+            const matchedAccount = (window.allAccountsData || []).find(acc => {
                 const dbUser = acc.username ? String(acc.username).trim().toLowerCase() : '';
                 const dbPass = acc.password ? String(acc.password).trim() : '';
                 return dbUser === uInput && dbPass === pInput;
@@ -1041,7 +1065,7 @@
                 switchTab('dashboard');
                 window.fetchAllFirebaseData();
             } else {
-                alert("Username atau Password salah!");
+                alert("Username, NIS, atau Password salah!");
             }
         };
 
@@ -1071,9 +1095,10 @@
                 allowedNavs = ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'];
             } else if (r.includes('kepalasekolah') || r.includes('kepala sekolah')) {
                 allowedNavs = ['nav-dashboard', 'nav-data-mutabaah', 'nav-monev-eksekutif', 'nav-ganti-password'];
-            } else if (r.includes('orangtua') || r.includes('walimurid')) {
+				} else if (r.includes('orangtua') || r.includes('walimurid')) {
                 allowedNavs = ['nav-dashboard', 'nav-data-mutabaah', 'nav-ganti-password'];
-            } else {
+            }
+			else {
                 allowedNavs = ['nav-dashboard', 'nav-ganti-password'];
             }
 
@@ -1580,7 +1605,16 @@
             const tbodyAll = document.getElementById('all-mutabaah-table');
             let displayList = list || window.allSetoranData || [];
 
-            if (window.currentUserRole && window.currentUserRole !== 'Admin') {
+            const isParent = window.currentUserRole === 'OrangTua';
+
+            // Jika Orang Tua yang login, saring hanya data anak tersebut
+            if (isParent) {
+                const studentName = (window.currentUserLinked || '').trim().toLowerCase();
+                displayList = displayList.filter(item => {
+                    const siswaItem = (item.siswa || '').trim().toLowerCase();
+                    return siswaItem === studentName;
+                });
+            } else if (window.currentUserRole && window.currentUserRole !== 'Admin') {
                 const currentName = (window.currentUser || window.currentUserName || '').trim().toLowerCase();
                 const guruHalaqah = (window.allHalaqahData || []).filter(h => 
                     (h.teacher && h.teacher.toLowerCase().includes(currentName)) || h.id === window.currentUserLinked
@@ -1599,7 +1633,7 @@
 
             if (tbodyAll) {
                 tbodyAll.innerHTML = displayList.length === 0 
-                    ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data mutabaah yang tercatat.</td></tr>'
+                    ? '<tr><td colspan="8" class="py-4 text-center text-slate-400">Belum ada data mutabaah yang tercatat.</td></tr>'
                     : displayList.map(item => `
                         <tr class="hover:bg-slate-50">
                             <td class="py-3 px-4 text-slate-500">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
@@ -1609,6 +1643,12 @@
                             <td class="py-3 px-4">Juz ${item.juz || '-'}</td>
                             <td class="py-3 px-4 font-semibold text-emerald-600">${item.kualitas || '-'}</td>
                             <td class="py-3 px-4 text-slate-500">${item.penguji || '-'}</td>
+                            <td class="py-3 px-4 text-center">
+                                <button onclick="togglePemeriksaanWali('${item.id}')" class="px-3 py-1 rounded-lg text-xs font-semibold transition ${item.checkedByParent ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                                    <i class="fa-solid ${item.checkedByParent ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark text-slate-400'} mr-1"></i>
+                                    ${item.checkedByParent ? `Sudah Diperiksa (${item.checkedParentTime || ''})` : 'Belum Diperiksa'}
+                                </button>
+                            </td>
                         </tr>
                     `).join('');
             }
@@ -1665,6 +1705,31 @@
          const adminFilter = document.getElementById('admin-filter-section');
          const adminCharts = document.getElementById('admin-charts-section');
          const statsContainer = document.getElementById('stats-cards-container'); // <-- Tambahan elemen kotak statistik
+		 // Fungsi Interaktif Pemeriksaan oleh Wali
+        window.togglePemeriksaanWali = async function(docId) {
+            try {
+                const setoranRef = doc(db, "setoran", docId);
+                const currentSetoran = (window.allSetoranData || []).find(s => s.id === docId);
+                
+                if (!currentSetoran) return;
+
+                const isChecked = currentSetoran.checkedByParent;
+                const nowStr = new Date().toLocaleDateString('id-ID') + ' ' + new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+
+                await updateDoc(setoranRef, {
+                    checkedByParent: !isChecked,
+                    checkedParentTime: !isChecked ? nowStr : null
+                });
+
+                alert(!isChecked ? "Alhamdulillah, setoran ditandai sudah diperiksa." : "Status pemeriksaan dibatalkan.");
+                window.fetchAllFirebaseData();
+            } catch (err) {
+                console.error("Gagal memperbarui status pemeriksaan:", err);
+                alert("Terjadi kesalahan saat memperbarui status.");
+            }
+        };
+		 
+		 
          const tableTitle = document.getElementById('dashboard-table-title');
          const actionBtn = document.getElementById('dashboard-action-btn');
          const tableHeader = document.getElementById('dashboard-table-header');
