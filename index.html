@@ -1713,58 +1713,44 @@
             const role = window.currentUserRole ? window.currentUserRole.trim() : '';
 
             if (role === 'OrangTua') {
-                // TAMPILAN KHUSUS WALI SISWA / ORANG TUA
+                // TAMPILAN KHUSUS WALI SISWA: Sembunyikan statistik umum & grafik agar bersih & efisien
                 if(banner) banner.classList.add('hidden');
                 if(adminFilter) adminFilter.classList.add('hidden');
-                if(adminCharts) adminCharts.classList.remove('hidden'); // Tampilkan grafik untuk orang tua
-                if(statsContainer) statsContainer.classList.remove('hidden'); // Tampilkan statistik untuk orang tua
+                if(adminCharts) adminCharts.classList.add('hidden'); // Grafik dihilangkan untuk orang tua
+                if(statsContainer) statsContainer.classList.add('hidden'); // Kotak statistik dihilangkan untuk orang tua
 
                 const childName = (window.currentUserLinked || '').trim();
                 const childData = (window.allStudentsData || []).find(s => s.name && s.name.toLowerCase() === childName.toLowerCase()) || {
                     name: childName,
-                    nis: '2026001',
-                    kelas: 'VII-1',
+                    nis: '-',
+                    kelas: '-',
                     target: 'Juz 30',
                     guardian: window.currentUser || 'Wali Murid'
                 };
 
-                // Sisipkan Banner Profil Santri di atas statistik jika belum ada
+                // Sisipkan Banner Profil Santri yang elegan di atas
                 let profileBanner = document.getElementById('parent-child-profile-banner');
                 if (!profileBanner) {
                     profileBanner = document.createElement('div');
                     profileBanner.id = 'parent-child-profile-banner';
                     profileBanner.className = "bg-slate-800 text-white p-6 rounded-2xl shadow-md mb-6 space-y-2 border-l-4 border-amber-500";
-                    statsContainer.parentNode.insertBefore(profileBanner, statsContainer);
+                    
+                    // Sisipkan sebelum elemen judul atau tabel
+                    const container = tableTitle ? tableTitle.parentNode : mainTbody.parentNode;
+                    container.insertBefore(profileBanner, container.firstChild);
                 }
                 profileBanner.innerHTML = `
                     <div class="flex items-center space-x-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
                         <i class="fa-solid fa-id-card"></i><span>PROFIL SANTRI</span>
                     </div>
                     <h3 class="text-2xl font-bold">${childData.name.toUpperCase()}</h3>
-                    <p class="text-xs text-slate-300 font-medium">NIS: ${childData.nis || '-'} • Kelas: ${childData.kelas || '-'} • Target: ${childData.target || 'Juz 30'}</p>
+                    <p class="text-xs text-slate-300 font-medium">NIS: ${childData.nis || '-'} • Kelas: ${childData.kelas || '-'} • Target Hafalan: ${childData.target || 'Juz 30'}</p>
                 `;
 
                 // Filter setoran khusus anak ini
                 const childSetoran = (window.allSetoranData || []).filter(item => 
                     item.siswa && item.siswa.toLowerCase() === childName.toLowerCase()
                 );
-
-                const totalZiyadah = childSetoran.filter(i => i.jenis === 'Ziyadah').length;
-                const totalMurajaah = childSetoran.filter(i => i.jenis === 'Murajaah').length;
-
-                // Update angka statistik anak
-                const statSiswa = document.getElementById('stat-total-siswa');
-                const statSetoran = document.getElementById('stat-total-setoran');
-                const statZiyadah = document.getElementById('stat-ziyadah');
-                const statMurajaah = document.getElementById('stat-murajaah');
-
-                if(statSiswa) statSiswa.innerText = "1";
-                if(statSetoran) statSetoran.innerText = childSetoran.length;
-                if(statZiyadah) statZiyadah.innerText = totalZiyadah;
-                if(statMurajaah) statMurajaah.innerText = totalMurajaah;
-
-                // Perbarui Grafik & Tabel Setoran Terbaru untuk Orang Tua
-                window.updateDashboardStatsAndCharts(childSetoran);
 
                 if(tableTitle) tableTitle.innerText = "Setoran Terbaru Ananda";
                 if(actionBtn) actionBtn.style.display = 'none';
