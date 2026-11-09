@@ -1729,14 +1729,15 @@
                 };
 
                 // Sisipkan Banner Profil Santri yang elegan di atas
+                // Sisipkan Banner Profil Santri dengan lebar penuh (full-width)
                 let profileBanner = document.getElementById('parent-child-profile-banner');
                 if (!profileBanner) {
                     profileBanner = document.createElement('div');
                     profileBanner.id = 'parent-child-profile-banner';
-                    profileBanner.className = "bg-slate-800 text-white p-6 rounded-2xl shadow-md mb-6 space-y-2 border-l-4 border-amber-500";
+                    profileBanner.className = "bg-slate-900 text-white p-6 rounded-2xl shadow-md mb-6 space-y-2 border-l-4 border-amber-500 w-full block";
                     
-                    // Sisipkan sebelum elemen judul atau tabel
-                    const container = tableTitle ? tableTitle.parentNode : mainTbody.parentNode;
+                    // Sisipkan sebelum tabel atau kontainer dasbor
+                    const container = tableTitle ? tableTitle.parentNode.parentNode : mainTbody.parentNode;
                     container.insertBefore(profileBanner, container.firstChild);
                 }
                 profileBanner.innerHTML = `
