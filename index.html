@@ -963,6 +963,7 @@
         };
 
         // Pemulihan Sesi Saat Halaman Dimuat / Direfresh
+        // Pemulihan Sesi Saat Halaman Dimuat / Direfresh
         document.addEventListener('DOMContentLoaded', () => {
             const savedRole = localStorage.getItem('tahfiz_role');
             const savedUser = localStorage.getItem('tahfiz_user');
@@ -985,9 +986,17 @@
                 if (displayRoleEl) displayRoleEl.innerText = formatRoleName(window.currentUserRole);
 
                 if (typeof window.applyRoleBasedSidebar === 'function') window.applyRoleBasedSidebar(window.currentUserRole);
-                if (typeof window.setupDashboardByRole === 'function') window.setupDashboardByRole();
-                if (typeof window.initSurahDropdown === 'function') window.initSurahDropdown();
-                if (typeof window.switchTab === 'function') window.switchTab('dashboard');
+                
+                // JIKA YANG LOGIN KEPALA SEKOLAH, LANGSUNG RENDER MONEV
+                const r = window.currentUserRole.toLowerCase();
+                if (r === 'kepalasekolah' || r.includes('kepala') || r.includes('kepsek')) {
+                    if (typeof window.renderMonevEksekutifView === 'function') {
+                        window.renderMonevEksekutifView();
+                    }
+                    if (typeof window.switchTab === 'function') window.switchTab('monev-eksekutif');
+                } else {
+                    if (typeof window.switchTab === 'function') window.switchTab('dashboard');
+                }
             } else {
                 if (loginPage) loginPage.classList.remove('hidden');
                 if (appContainer) appContainer.classList.add('hidden');
