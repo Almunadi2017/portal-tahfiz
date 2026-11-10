@@ -360,15 +360,15 @@
     </div>
 	<!-- TOMBOL AKSI EKSEKUSI FILTER -->
         <div class="col-span-full flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 mt-2">
-            <button type="button" onclick="resetMutabaahFilters()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center space-x-1.5">
-                <i class="fa-solid fa-rotate-left"></i>
-                <span>Reset Filter</span>
-            </button>
-            <button type="button" onclick="applyMutabaahFilters()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-1.5">
-    <i class="fa-solid fa-filter"></i>
-    <span>Terapkan Filter</span>
-</button>
-        </div>
+    <button type="button" id="btn-reset-filter" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-rotate-left"></i>
+        <span>Reset Filter</span>
+    </button>
+    <button type="button" id="btn-apply-filter" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-filter"></i>
+        <span>Terapkan Filter</span>
+    </button>
+</div>
 	
 </div>
 							
@@ -2280,6 +2280,26 @@
             // Render ulang tabel dengan data hasil filter
             window.renderMutabaahTable(filtered);
         };
+		
+		document.addEventListener('DOMContentLoaded', function() {
+    const btnApply = document.getElementById('btn-apply-filter');
+    const btnReset = document.getElementById('btn-reset-filter');
+
+    if (btnApply) {
+        btnApply.addEventListener('click', function() {
+            console.log("Tombol Terapkan Filter diklik!");
+            window.applyMutabaahFilters();
+        });
+    }
+
+    if (btnReset) {
+        btnReset.addEventListener('click', function() {
+            console.log("Tombol Reset Filter diklik!");
+            window.resetMutabaahFilters();
+        });
+    }
+});
+		
     </script>
    
    
