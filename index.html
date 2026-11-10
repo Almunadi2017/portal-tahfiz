@@ -2229,6 +2229,45 @@
 
             window.renderMutabaahTable(window.allSetoranData);
         };	
+		
+		window.applyMutabaahFilters = function() {
+            let filtered = window.allSetoranData || [];
+
+            const fKelas = document.getElementById('filter-mutabaah-kelas')?.value;
+            const fSiswa = document.getElementById('filter-mutabaah-siswa')?.value?.toLowerCase().trim();
+            const fTanggal = document.getElementById('filter-mutabaah-tanggal')?.value;
+            const fBulan = document.getElementById('filter-mutabaah-bulan')?.value;
+            const fGuru = document.getElementById('filter-mutabaah-guru')?.value?.toLowerCase().trim();
+
+            // 1. Filter Berdasarkan Kelas (mencocokkan siswa di kelas tersebut)
+            if (fKelas) {
+                const siswaKelasNames = (window.allStudentsData || []).filter(s => s.kelas === fKelas).map(s => s.name.toLowerCase());
+                filtered = filtered.filter(i => siswaKelasNames.includes((i.siswa || '').toLowerCase()));
+            }
+
+            // 2. Filter Berdasarkan Nama Siswa
+            if (fSiswa) {
+                filtered = filtered.filter(i => (i.siswa || '').toLowerCase().includes(fSiswa));
+            }
+
+            // 3. Filter Berdasarkan Tanggal / Hari (Format YYYY-MM-DD)
+            if (fTanggal) {
+                filtered = filtered.filter(i => i.timestamp && i.timestamp.startsWith(fTanggal));
+            }
+
+            // 4. Filter Berdasarkan Bulan (Format YYYY-MM)
+            if (fBulan) {
+                filtered = filtered.filter(i => i.timestamp && i.timestamp.startsWith(fBulan));
+            }
+
+            // 5. Filter Berdasarkan Guru Tahfiz / Penguji
+            if (fGuru) {
+                filtered = filtered.filter(i => (i.penguji || '').toLowerCase().includes(fGuru));
+            }
+
+            // Render ulang tabel dengan data hasil filter
+            window.renderMutabaahTable(filtered);
+        };
     </script>
    
    
