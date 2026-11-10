@@ -325,6 +325,7 @@
                                 <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-download"></i><span>Ekspor CSV</span></button>
                             </div>
 							<!-- FILTER KOMPREHENSIF DATA MUTABAAH -->
+							<div id="container-filter-mutabaah" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4 text-xs">
         <div id="mutabaah-filter-section" class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4 text-xs">
             <div>
                 <label class="block font-semibold text-slate-600 mb-1">Kelas:</label>
@@ -358,6 +359,7 @@
                 </select>
             </div>
         </div>
+		</div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse text-xs">
@@ -1182,7 +1184,17 @@
 
             // Refresh data saat tab diklik
             window.fetchAllFirebaseData();
-
+			// ATUR KEMUNCULAN FILTER MUTABAAH KHUSUS ADMIN & KEPSEK
+        const filterContainer = document.getElementById('container-filter-mutabaah');
+        if (filterContainer) {
+            if (tabId === 'data-mutabaah' && (window.currentUserRole === 'Admin' || window.currentUserRole === 'KepalaSekolah' || (window.currentUserRole || '').toLowerCase().includes('kepala'))) {
+                filterContainer.classList.remove('hidden'); // Muncul hanya untuk Admin & Kepsek di tab Mutabaah
+            } else {
+                filterContainer.classList.add('hidden');    // Sembunyikan untuk Guru & Wali Murid
+            }
+        }
+			
+			
             if (tabId === 'input-setoran') {
                 if (typeof window.populateStudentDropdowns === 'function') window.populateStudentDropdowns(window.allStudentsData);
                 if (typeof window.initSurahDropdown === 'function') window.initSurahDropdown();
