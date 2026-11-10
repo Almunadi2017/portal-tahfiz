@@ -358,6 +358,18 @@
             <option value="Abdul Rahman">Abdul Rahman</option>
         </select>
     </div>
+	<!-- TOMBOL AKSI EKSEKUSI FILTER -->
+        <div class="col-span-full flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 mt-2">
+            <button type="button" onclick="resetMutabaahFilters()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>Reset Filter</span>
+            </button>
+            <button type="button" onclick="applyMutabaahFilters()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-filter"></i>
+                <span>Terapkan Filter</span>
+            </button>
+        </div>
+	
 </div>
 							
                         <div class="overflow-x-auto">
@@ -2201,6 +2213,22 @@
             }
         };
 			
+			
+		window.resetMutabaahFilters = function() {
+            const fKelas = document.getElementById('filter-mutabaah-kelas');
+            const fSiswa = document.getElementById('filter-mutabaah-siswa');
+            const fTanggal = document.getElementById('filter-mutabaah-tanggal');
+            const fBulan = document.getElementById('filter-mutabaah-bulan');
+            const fGuru = document.getElementById('filter-mutabaah-guru');
+
+            if(fKelas) fKelas.value = "";
+            if(fSiswa) fSiswa.value = "";
+            if(fTanggal) fTanggal.value = "";
+            if(fBulan) fBulan.value = "";
+            if(fGuru) fGuru.value = "";
+
+            window.renderMutabaahTable(window.allSetoranData);
+        };	
     </script>
    
    
