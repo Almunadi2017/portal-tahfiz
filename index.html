@@ -890,8 +890,13 @@
                 const snapStudents = await getDocs(collection(window.db, "students"));
                 window.allStudentsData = [];
                 snapStudents.forEach(d => window.allStudentsData.push({ id: d.id, ...d.data() }));
-                if (typeof window.renderStudentsTable === 'function') window.renderStudentsTable(window.allStudentsData);
-                if (typeof window.renderPromotionTable === 'function') window.renderPromotionTable(window.allStudentsData);
+                
+                if (typeof window.renderStudentsTable === 'function') {
+                    window.renderStudentsTable(window.allStudentsData);
+                }
+                if (typeof window.renderPromotionTable === 'function') {
+                    window.renderPromotionTable(window.allStudentsData);
+                }
                 
                 const statTotalSiswa = document.getElementById('stat-total-siswa');
                 if (statTotalSiswa) statTotalSiswa.innerText = window.allStudentsData.length;
@@ -923,7 +928,10 @@
                 const snapAccounts = await getDocs(collection(window.db, "accounts"));
                 window.allAccountsData = [];
                 snapAccounts.forEach(d => window.allAccountsData.push({ id: d.id, ...d.data() }));
-                if (typeof window.renderAccountsTable === 'function') window.renderAccountsTable(window.allAccountsData);
+                
+                if (typeof window.renderAccountsTable === 'function') {
+                    window.renderAccountsTable(window.allAccountsData);
+                }
                 
                 const tbodyGuru = document.getElementById('guru-table-body');
                 if (tbodyGuru) {
@@ -946,20 +954,27 @@
                 const snapHalaqah = await getDocs(collection(window.db, "halaqah"));
                 window.allHalaqahData = [];
                 snapHalaqah.forEach(d => window.allHalaqahData.push({ id: d.id, ...d.data() }));
-                if (typeof window.renderHalaqahTable === 'function') window.renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
+                
+                if (typeof window.renderHalaqahTable === 'function') {
+                    window.renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
+                }
 
                 // 5. Tarik Data Setoran (Mutabaah)
                 const snapSetoran = await getDocs(collection(window.db, "setoran"));
                 window.allSetoranData = [];
                 snapSetoran.forEach(d => window.allSetoranData.push({ id: d.id, ...d.data() }));
-                if (typeof window.applyFilters === 'function') window.applyFilters();
+                
+                if (typeof window.applyFilters === 'function') {
+                    window.applyFilters();
+                }
+                if (typeof window.renderAllTable === 'function') {
+                    window.renderAllTable(window.allSetoranData);
+                }
 
-                console.log("Semua data Firebase berhasil disinkronkan.");
+                console.log("Semua data Firebase berhasil disinkronkan dan dirender.");
             } catch (err) {
                 console.error("Error fetching Firebase data:", err);
             }
-			
-			window.populateFilterDropdowns();
         };
 
         // Pemulihan Sesi Saat Halaman Dimuat / Direfresh
