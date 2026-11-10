@@ -1197,82 +1197,22 @@
 
             // Refresh data saat tab diklik
             window.fetchAllFirebaseData();
-
-            // ATUR KEMUNCULAN FILTER MUTABAAH KHUSUS ADMIN & KEPSEK
-            const filterContainer = document.getElementById('container-filter-mutabaah');
-            if (filterContainer) {
-                if (tabId === 'data-mutabaah' && (window.currentUserRole === 'Admin' || window.currentUserRole === 'KepalaSekolah' || (window.currentUserRole || '').toLowerCase().includes('kepala'))) {
-                    filterContainer.classList.remove('hidden'); 
-                } else {
-                    filterContainer.classList.add('hidden');    
-                }
+			// ATUR KEMUNCULAN FILTER MUTABAAH KHUSUS ADMIN & KEPSEK
+        const filterContainer = document.getElementById('container-filter-mutabaah');
+        if (filterContainer) {
+            if (tabId === 'data-mutabaah' && (window.currentUserRole === 'Admin' || window.currentUserRole === 'KepalaSekolah' || (window.currentUserRole || '').toLowerCase().includes('kepala'))) {
+                filterContainer.classList.remove('hidden'); // Muncul hanya untuk Admin & Kepsek di tab Mutabaah
+            } else {
+                filterContainer.classList.add('hidden');    // Sembunyikan untuk Guru & Wali Murid
             }
-            
-            // JIKA TAB DATA MUTABAAH DIBUKA, RENDER TABEL SESUAI ROLE
-            if (tabId === 'data-mutabaah') {
-                if (typeof window.renderAllTable === 'function') {
-                    window.renderAllTable(window.allSetoranData);
-                }
-            } else if (tabId === 'input-setoran') {
+        }
+			
+			
+            if (tabId === 'input-setoran') {
                 if (typeof window.populateStudentDropdowns === 'function') window.populateStudentDropdowns(window.allStudentsData);
                 if (typeof window.initSurahDropdown === 'function') window.initSurahDropdown();
             } else if (tabId === 'dashboard') {
                 if (typeof window.setupDashboardByRole === 'function') window.setupDashboardByRole();
-            }
-        };
-
-        window.applyFilters = function() {
-            let filtered = window.allSetoranData || [];
-            
-            // Filter Periode Waktu
-            const periode = document.getElementById('filter-periode')?.value;
-            const tglDari = document.getElementById('filter-dari')?.value;
-            const tglSampai = document.getElementById('filter-sampai')?.value;
-
-            if (periode === 'hari-ini') {
-                const todayStr = new Date().toISOString().split('T')[0];
-                filtered = filtered.filter(i => i.timestamp && i.timestamp.startsWith(todayStr));
-            } else if (periode === 'bulan-ini') {
-                const currentMonth = new Date().toISOString().substring(0, 7);
-                filtered = filtered.filter(i => i.timestamp && i.timestamp.startsWith(currentMonth));
-            }
-
-            if (tglDari && tglSampai) {
-                const dStart = new Date(tglDari);
-                const dEnd = new Date(tglSampai);
-                dEnd.setHours(23, 59, 59);
-                filtered = filtered.filter(i => {
-                    const t = new Date(i.timestamp);
-                    return t >= dStart && t <= dEnd;
-                });
-            }
-
-            // Filter Khusus Eksekutif / Kepala Sekolah (Kelas, Halaqah, Siswa)
-            const fKelas = document.getElementById('filter-kepsek-kelas')?.value;
-            const fHalaqah = document.getElementById('filter-kepsek-halaqah')?.value;
-            const fSiswaText = document.getElementById('filter-kepsek-siswa')?.value?.toLowerCase();
-
-            if (fKelas) {
-                const siswaKelasNames = (window.allStudentsData || []).filter(s => s.kelas === fKelas).map(s => s.name.toLowerCase());
-                filtered = filtered.filter(i => siswaKelasNames.includes((i.siswa || '').toLowerCase()));
-            }
-
-            if (fHalaqah) {
-                const siswaHalaqahNames = (window.allStudentsData || []).filter(s => s.idHalaqah === fHalaqah).map(s => s.name.toLowerCase());
-                filtered = filtered.filter(i => siswaHalaqahNames.includes((i.siswa || '').toLowerCase()));
-            }
-
-            if (fSiswaText) {
-                filtered = filtered.filter(i => (i.siswa || '').toLowerCase().includes(fSiswaText));
-            }
-
-            // Perbarui statistik, grafik, dan tabel sesuai peran yang aktif
-            window.updateDashboardStatsAndCharts(filtered);
-            if (window.currentUserRole === 'KepalaSekolah' || (window.currentUserRole || '').toLowerCase().includes('kepala')) {
-                window.renderKepsekTable(filtered);
-            } else {
-                // Peran Guru Tahfiz, Orang Tua, dan Admin akan memproses filternya di renderAllTable
-                window.renderAllTable(filtered);
             }
         };
 
@@ -1720,27 +1660,21 @@
             }).join('');
         };
 
-        
-		window.renderAllTable = function(list) {
+        window.renderAllTable = function(list) {
             const tbodyAll = document.getElementById('all-mutabaah-table');
-            if (!tbodyAll) return;
-
             let displayList = list || window.allSetoranData || [];
-            const role = (window.currentUserRole || '').trim().toLowerCase();
 
-            // 1. Jika peran adalah Wali Murid / Orang Tua
-            if (role === 'orangtua' || role.includes('wali')) {
-                const childName = (window.currentUserLinked || '').trim().toLowerCase();
+            const isParent = window.currentUserRole === 'OrangTua';
+
+            // Jika Orang Tua yang login, saring hanya data anak tersebut
+            if (isParent) {
+                const studentName = (window.currentUserLinked || '').trim().toLowerCase();
                 displayList = displayList.filter(item => {
                     const siswaItem = (item.siswa || '').trim().toLowerCase();
-                    return siswaItem === childName;
+                    return siswaItem === studentName;
                 });
-            } 
-            // 2. Jika peran adalah Guru Tahfiz / Penguji
-            else if (role.includes('guru') || role.includes('tahfiz') || role.includes('penguji')) {
+            } else if (window.currentUserRole && window.currentUserRole !== 'Admin') {
                 const currentName = (window.currentUser || window.currentUserName || '').trim().toLowerCase();
-                
-                // Ambil santri yang ada di kelompok halaqah guru tersebut
                 const guruHalaqah = (window.allHalaqahData || []).filter(h => 
                     (h.teacher && h.teacher.toLowerCase().includes(currentName)) || h.id === window.currentUserLinked
                 );
@@ -1752,30 +1686,31 @@
                 displayList = displayList.filter(item => {
                     const siswaItem = (item.siswa || '').trim().toLowerCase();
                     const pengujiItem = (item.penguji || '').trim().toLowerCase();
-                    // Tampilkan jika santrinya adalah binaan halaqah ATAU diuji langsung oleh guru tersebut
                     return santriBinaanNames.includes(siswaItem) || pengujiItem.includes(currentName);
                 });
             }
-            // 3. Untuk Admin & Kepala Sekolah, tampilkan seluruh data (tanpa filter khusus di sini)
 
-            tbodyAll.innerHTML = displayList.length === 0 
-                ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data mutabaah yang tercatat untuk Anda.</td></tr>'
-                : displayList.map(item => {
-                    const studentInfo = (window.allStudentsData || []).find(s => s.name && s.name.toLowerCase() === (item.siswa || '').toLowerCase());
-                    const kelasSiswa = studentInfo ? studentInfo.kelas : '-';
-
-                    return `
-                        <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs">
+            if (tbodyAll) {
+                tbodyAll.innerHTML = displayList.length === 0 
+                    ? '<tr><td colspan="8" class="py-4 text-center text-slate-400">Belum ada data mutabaah yang tercatat.</td></tr>'
+                    : displayList.map(item => `
+                        <tr class="hover:bg-slate-50">
                             <td class="py-3 px-4 text-slate-500">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
-                            <td class="py-3 px-4 font-bold text-slate-800">${item.siswa || '-'} <br><span class="text-[10px] text-blue-600 font-semibold">Kelas: ${kelasSiswa}</span></td>
-                            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded font-semibold">${item.jenis || 'Ziyadah'}</span></td>
+                            <td class="py-3 px-4 font-bold text-slate-800">${item.siswa || '-'}</td>
+                            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${item.jenis || 'Ziyadah'}</span></td>
                             <td class="py-3 px-4">${item.surah || '-'} (Ayat ${item.ayatMulai || 1}-${item.ayatSelesai || 1})</td>
-                            <td class="py-3 px-4 font-semibold">Juz ${item.juz || '-'}</td>
-                            <td class="py-3 px-4 text-indigo-600 font-semibold">${item.kualitas || '-'}</td>
+                            <td class="py-3 px-4">Juz ${item.juz || '-'}</td>
+                            <td class="py-3 px-4 font-semibold text-emerald-600">${item.kualitas || '-'}</td>
                             <td class="py-3 px-4 text-slate-500">${item.penguji || '-'}</td>
+                            <td class="py-3 px-4 text-center">
+                                <button onclick="togglePemeriksaanWali('${item.id}')" class="px-3 py-1 rounded-lg text-xs font-semibold transition ${item.checkedByParent ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                                    <i class="fa-solid ${item.checkedByParent ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark text-slate-400'} mr-1"></i>
+                                    ${item.checkedByParent ? `Sudah Diperiksa (${item.checkedParentTime || ''})` : 'Belum Diperiksa'}
+                                </button>
+                            </td>
                         </tr>
-                    `;
-                }).join('');
+                    `).join('');
+            }
         };
 
         window.applyFilters = function() {
