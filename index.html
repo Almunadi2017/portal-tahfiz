@@ -963,7 +963,6 @@
         };
 
         // Pemulihan Sesi Saat Halaman Dimuat / Direfresh
-        // Pemulihan Sesi Saat Halaman Dimuat / Direfresh
         document.addEventListener('DOMContentLoaded', () => {
             const savedRole = localStorage.getItem('tahfiz_role');
             const savedUser = localStorage.getItem('tahfiz_user');
@@ -986,17 +985,9 @@
                 if (displayRoleEl) displayRoleEl.innerText = formatRoleName(window.currentUserRole);
 
                 if (typeof window.applyRoleBasedSidebar === 'function') window.applyRoleBasedSidebar(window.currentUserRole);
-                
-                // JIKA YANG LOGIN KEPALA SEKOLAH, LANGSUNG RENDER MONEV
-                const r = window.currentUserRole.toLowerCase();
-                if (r === 'kepalasekolah' || r.includes('kepala') || r.includes('kepsek')) {
-                    if (typeof window.renderMonevEksekutifView === 'function') {
-                        window.renderMonevEksekutifView();
-                    }
-                    if (typeof window.switchTab === 'function') window.switchTab('monev-eksekutif');
-                } else {
-                    if (typeof window.switchTab === 'function') window.switchTab('dashboard');
-                }
+                if (typeof window.setupDashboardByRole === 'function') window.setupDashboardByRole();
+                if (typeof window.initSurahDropdown === 'function') window.initSurahDropdown();
+                if (typeof window.switchTab === 'function') window.switchTab('dashboard');
             } else {
                 if (loginPage) loginPage.classList.remove('hidden');
                 if (appContainer) appContainer.classList.add('hidden');
@@ -1227,12 +1218,7 @@
                 if (typeof window.initSurahDropdown === 'function') window.initSurahDropdown();
             } else if (tabId === 'dashboard') {
                 if (typeof window.setupDashboardByRole === 'function') window.setupDashboardByRole();
-            } else if (tabId === 'monev-eksekutif') {
-             if (typeof window.renderMonevEksekutifView === 'function') {
-                 window.renderMonevEksekutifView();
-             }
-         }
-			
+            }
         };
 
         window.applyFilters = function() {
@@ -2113,21 +2099,18 @@
         };
 		
 		window.renderMonevEksekutifView = function() {
+            // Jika Anda menggunakan tab/view container terpisah untuk menu monev:
             const tabMonev = document.getElementById('tab-monev-eksekutif');
             if (!tabMonev) return;
 
-            // WAJIB: Buka pembungkus tab agar tampil di layar
-            tabMonev.classList.remove('hidden');
-
-            // Hitung rekapitulasi per kelompok halaqah secara dinamis
+            // Hitung rekap per halaqah
             const halaqahSummary = (window.allHalaqahData || []).map(h => {
                 const santriBinaan = (window.allStudentsData || []).filter(s => s.idHalaqah === (h.id || h.idHalaqah));
-                const santriNames = santriBinaan.map(s => (s.name || '').toLowerCase());
+                const santriNames = santriBinaan.map(s => s.name.toLowerCase());
                 const setoranHalaqah = (window.allSetoranData || []).filter(st => santriNames.includes((st.siswa || '').toLowerCase()));
                 
                 return {
-                    id: h.idHalaqah || h.id || '-',
-                    name: h.name || 'Kelompok Halaqah',
+                    id: h.id || h.idHalaqah || '-',
                     teacher: h.teacher || 'Ustadz Pembimbing',
                     totalSantri: santriBinaan.length,
                     totalSetoran: setoranHalaqah.length,
@@ -2138,7 +2121,6 @@
 
             tabMonev.innerHTML = `
                 <div class="space-y-6">
-                    <!-- KARTU BANNER MONEV -->
                     <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-6 rounded-2xl shadow-lg border-l-4 border-amber-500 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div>
                             <h2 class="text-xl font-bold">Rekapitulasi Monitoring & Evaluasi Tahfiz</h2>
@@ -2150,18 +2132,16 @@
                         </button>
                     </div>
 
-                    <!-- TABEL RINGKASAN HALAQAH -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="p-5 border-b border-slate-100 font-bold text-slate-800 text-sm flex items-center space-x-2">
                             <i class="fa-solid fa-chart-pie text-emerald-600"></i>
-                            <span>Ringkasan Kinerja Kelompok Halaqah & Capaian Hafalan</span>
+                            <span>Ringkasan Kinerja Kelompok Halaqah</span>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse text-xs">
                                 <thead>
                                     <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
                                         <th class="py-3 px-4 font-semibold">ID Halaqah</th>
-                                        <th class="py-3 px-4 font-semibold">Nama Kelompok</th>
                                         <th class="py-3 px-4 font-semibold">Ustadz Pembimbing</th>
                                         <th class="py-3 px-4 font-semibold text-center">Jumlah Santri</th>
                                         <th class="py-3 px-4 font-semibold text-center">Total Setoran</th>
@@ -2170,12 +2150,11 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 text-slate-700">
-                                    ${halaqahSummary.length === 0 ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data halaqah.</td></tr>' : halaqahSummary.map(h => `
+                                    ${halaqahSummary.length === 0 ? '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data halaqah.</td></tr>' : halaqahSummary.map(h => `
                                         <tr class="hover:bg-slate-50">
                                             <td class="py-3 px-4 font-bold text-slate-900">${h.id}</td>
-                                            <td class="py-3 px-4 font-semibold text-slate-800">${h.name}</td>
-                                            <td class="py-3 px-4 font-medium">${h.teacher}</td>
-                                            <td class="py-3 px-4 text-center"><span class="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg font-semibold">${h.totalSantri} Santri</span></td>
+                                            <td class="py-3 px-4 font-semibold">${h.teacher}</td>
+                                            <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold">${h.totalSantri} Santri</span></td>
                                             <td class="py-3 px-4 text-center font-bold">${h.totalSetoran}</td>
                                             <td class="py-3 px-4 text-center text-emerald-600 font-semibold">${h.ziyadahCount}</td>
                                             <td class="py-3 px-4 text-center text-indigo-600 font-semibold">${h.murajaahCount}</td>
@@ -2187,18 +2166,6 @@
                     </div>
                 </div>
             `;
-        };
-
-        window.exportExcelMonev = function() {
-            alert("Fitur pengunduhan laporan rekapitulasi Excel (.xlsx) berhasil diproses untuk Kepala Sekolah.");
-        };
-
-     window.exportExcelMonev = function() {
-         alert("Fitur pengunduhan laporan rekapitulasi Excel (.xlsx) berhasil diproses untuk Kepala Sekolah.");
-     };
-
-        window.exportExcelMonev = function() {
-            alert("Fitur pengunduhan laporan rekapitulasi Excel (.xlsx) berhasil diproses untuk Kepala Sekolah.");
         };
 
         window.exportExcelMonev = function() {
