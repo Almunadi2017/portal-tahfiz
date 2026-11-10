@@ -1869,6 +1869,34 @@
                 if(actionBtn) actionBtn.style.display = 'block';
             }
         };
+		
+		window.renderKepsekTable = function(list) {
+            const tbody = document.getElementById('dashboard-main-table-body');
+            if (!tbody) return;
+
+            const displayList = list || window.allSetoranData || [];
+
+            tbody.innerHTML = displayList.length === 0 
+                ? '<tr><td colspan="8" class="py-4 text-center text-slate-400">Tidak ada data setoran yang ditemukan.</td></tr>'
+                : displayList.map(item => {
+                    // Cari kelas siswa dari data siswa
+                    const studentInfo = (window.allStudentsData || []).find(s => s.name && s.name.toLowerCase() === (item.siswa || '').toLowerCase());
+                    const kelasSiswa = studentInfo ? studentInfo.kelas : '-';
+
+                    return `
+                        <tr class="hover:bg-slate-50 border-b border-slate-100">
+                            <td class="py-3 px-4 text-slate-500 text-xs">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">${item.siswa || '-'}</td>
+                            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold text-xs">${kelasSiswa}</span></td>
+                            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded font-semibold text-xs">${item.jenis || 'Ziyadah'}</span></td>
+                            <td class="py-3 px-4 text-xs">${item.surah || '-'} (Ayat ${item.ayatMulai || 1}-${item.ayatSelesai || 1})</td>
+                            <td class="py-3 px-4 text-xs font-semibold">Juz ${item.juz || '-'}</td>
+                            <td class="py-3 px-4 font-semibold text-indigo-600 text-xs">${item.kualitas || '-'}</td>
+                            <td class="py-3 px-4 text-slate-500 text-xs">${item.penguji || '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
+        };
 			
     </script>
    
