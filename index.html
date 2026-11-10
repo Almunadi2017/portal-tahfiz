@@ -1197,22 +1197,82 @@
 
             // Refresh data saat tab diklik
             window.fetchAllFirebaseData();
-			// ATUR KEMUNCULAN FILTER MUTABAAH KHUSUS ADMIN & KEPSEK
-        const filterContainer = document.getElementById('container-filter-mutabaah');
-        if (filterContainer) {
-            if (tabId === 'data-mutabaah' && (window.currentUserRole === 'Admin' || window.currentUserRole === 'KepalaSekolah' || (window.currentUserRole || '').toLowerCase().includes('kepala'))) {
-                filterContainer.classList.remove('hidden'); // Muncul hanya untuk Admin & Kepsek di tab Mutabaah
-            } else {
-                filterContainer.classList.add('hidden');    // Sembunyikan untuk Guru & Wali Murid
+
+            // ATUR KEMUNCULAN FILTER MUTABAAH KHUSUS ADMIN & KEPSEK
+            const filterContainer = document.getElementById('container-filter-mutabaah');
+            if (filterContainer) {
+                if (tabId === 'data-mutabaah' && (window.currentUserRole === 'Admin' || window.currentUserRole === 'KepalaSekolah' || (window.currentUserRole || '').toLowerCase().includes('kepala'))) {
+                    filterContainer.classList.remove('hidden'); 
+                } else {
+                    filterContainer.classList.add('hidden');    
+                }
             }
-        }
-			
-			
-            if (tabId === 'input-setoran') {
+            
+            // JIKA TAB DATA MUTABAAH DIBUKA, RENDER TABEL SESUAI ROLE
+            if (tabId === 'data-mutabaah') {
+                if (typeof window.renderAllTable === 'function') {
+                    window.renderAllTable(window.allSetoranData);
+                }
+            } else if (tabId === 'input-setoran') {
                 if (typeof window.populateStudentDropdowns === 'function') window.populateStudentDropdowns(window.allStudentsData);
                 if (typeof window.initSurahDropdown === 'function') window.initSurahDropdown();
             } else if (tabId === 'dashboard') {
                 if (typeof window.setupDashboardByRole === 'function') window.setupDashboardByRole();
+            }
+        };
+
+        window.applyFilters = function() {
+            let filtered = window.allSetoranData || [];
+            
+            // Filter Periode Waktu
+            const periode = document.getElementById('filter-periode')?.value;
+            const tglDari = document.getElementById('filter-dari')?.value;
+            const tglSampai = document.getElementById('filter-sampai')?.value;
+
+            if (periode === 'hari-ini') {
+                const todayStr = new Date().toISOString().split('T')[0];
+                filtered = filtered.filter(i => i.timestamp && i.timestamp.startsWith(todayStr));
+            } else if (periode === 'bulan-ini') {
+                const currentMonth = new Date().toISOString().substring(0, 7);
+                filtered = filtered.filter(i => i.timestamp && i.timestamp.startsWith(currentMonth));
+            }
+
+            if (tglDari && tglSampai) {
+                const dStart = new Date(tglDari);
+                const dEnd = new Date(tglSampai);
+                dEnd.setHours(23, 59, 59);
+                filtered = filtered.filter(i => {
+                    const t = new Date(i.timestamp);
+                    return t >= dStart && t <= dEnd;
+                });
+            }
+
+            // Filter Khusus Eksekutif / Kepala Sekolah (Kelas, Halaqah, Siswa)
+            const fKelas = document.getElementById('filter-kepsek-kelas')?.value;
+            const fHalaqah = document.getElementById('filter-kepsek-halaqah')?.value;
+            const fSiswaText = document.getElementById('filter-kepsek-siswa')?.value?.toLowerCase();
+
+            if (fKelas) {
+                const siswaKelasNames = (window.allStudentsData || []).filter(s => s.kelas === fKelas).map(s => s.name.toLowerCase());
+                filtered = filtered.filter(i => siswaKelasNames.includes((i.siswa || '').toLowerCase()));
+            }
+
+            if (fHalaqah) {
+                const siswaHalaqahNames = (window.allStudentsData || []).filter(s => s.idHalaqah === fHalaqah).map(s => s.name.toLowerCase());
+                filtered = filtered.filter(i => siswaHalaqahNames.includes((i.siswa || '').toLowerCase()));
+            }
+
+            if (fSiswaText) {
+                filtered = filtered.filter(i => (i.siswa || '').toLowerCase().includes(fSiswaText));
+            }
+
+            // Perbarui statistik, grafik, dan tabel sesuai peran yang aktif
+            window.updateDashboardStatsAndCharts(filtered);
+            if (window.currentUserRole === 'KepalaSekolah' || (window.currentUserRole || '').toLowerCase().includes('kepala')) {
+                window.renderKepsekTable(filtered);
+            } else {
+                // Peran Guru Tahfiz, Orang Tua, dan Admin akan memproses filternya di renderAllTable
+                window.renderAllTable(filtered);
             }
         };
 
