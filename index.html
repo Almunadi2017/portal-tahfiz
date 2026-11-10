@@ -1480,23 +1480,34 @@
             `).join('');
         };
 
-        window.renderAccountsTable = function(accounts) {
-            const tbody = document.getElementById('accounts-table-body');
-            if(!tbody) return;
-            if(accounts.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data akun.</td></tr>'; return; }
-            tbody.innerHTML = accounts.map(a => `
-                <tr class="hover:bg-slate-50">
-                    <td class="py-3 px-4 font-mono font-semibold">${a.userId || 'U000'}</td>
-                    <td class="py-3 px-4">${a.username}</td>
-                    <td class="py-3 px-4 font-bold">${a.name}</td>
-                    <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full font-semibold bg-blue-100 text-blue-700">${a.role}</span></td>
-                    <td class="py-3 px-4">${a.linked || 'ALL'}</td>
-                    <td class="py-3 px-4 text-center space-x-2">
-                        <button onclick='openAccountModal("edit", ${JSON.stringify(a)})' class="text-blue-600 hover:underline"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="deleteAccount('${a.id}')" class="text-red-600 hover:underline"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
+        
+		window.renderAccountsTable = function(accountsList) {
+            const tbody = document.getElementById('accounts-table-body'); // Sesuaikan dengan ID tbody tabel akun Anda
+            if (!tbody) return;
+
+            const list = accountsList || window.allAccountsData || [];
+
+            tbody.innerHTML = list.length === 0 
+                ? '<tr><td colspan="6" class="py-4 text-center text-slate-400">Belum ada data akun pengguna.</td></tr>'
+                : list.map((acc, index) => `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="py-3 px-4 font-mono text-xs text-slate-500">${acc.id || 'U' + (1000 + index)}</td>
+                        <td class="py-3 px-4 font-medium text-slate-800">${acc.username || '-'}</td>
+                        <td class="py-3 px-4 font-bold text-slate-900">${acc.name || acc.nama || '-'}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold text-xs">${acc.role || 'GuruTahfiz'}</span>
+                        </td>
+                        <td class="py-3 px-4 text-xs font-mono text-slate-600">${acc.linked || 'ALL'}</td>
+                        <td class="py-3 px-4 text-center space-x-2">
+                            <button onclick="editAccount('${acc.id}')" class="text-blue-600 hover:text-blue-800 p-1 rounded transition" title="Edit Akun">
+                                <i class="fa-solid fa-pen-to-square text-sm"></i>
+                            </button>
+                            <button onclick="deleteAccount('${acc.id}')" class="text-red-600 hover:text-red-800 p-1 rounded transition" title="Hapus Akun">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
         };
 
         window.renderPromotionTable = function(students) {
@@ -1964,6 +1975,65 @@
                 console.error("Gagal menambah akun:", err);
                 alert("Gagal menambahkan akun: " + err.message);
             }
+        };
+		
+		// Fungsi untuk Mengedit Akun
+        window.editAccount = function(docId) {
+            const account = (window.allAccountsData || []).find(acc => acc.id === docId);
+            if (!account) {
+                alert("Data akun tidak ditemukan.");
+                return;
+            }
+
+            // Anda bisa mengisi form edit atau menggunakan prompt cepat untuk pembaruan data
+            const newName = prompt("Edit Nama Lengkap:", account.name || account.nama || "");
+            if (newName === null) return;
+
+            const newUsername = prompt("Edit Username:", account.username || "");
+            if (newUsername === null) return;
+
+            const newPassword = prompt("Edit Password baru:", account.password || "");
+            if (newPassword === null) return;
+
+            const newRole = prompt("Edit Role (Admin / GuruTahfiz / KepalaSekolah / OrangTua):", account.role || "GuruTahfiz");
+            if (newRole === null) return;
+
+            const newLinked = prompt("Edit Linked ID / NIS (atau ALL):", account.linked || "ALL");
+            if (newLinked === null) return;
+
+            // Proses pembaruan ke Firebase Firestore
+            import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js").then(async ({ doc, updateDoc }) => {
+                try {
+                    const accRef = doc(db, "accounts", docId);
+                    await updateDoc(accRef, {
+                        name: newName,
+                        username: newUsername,
+                        password: newPassword,
+                        role: newRole,
+                        linked: newLinked
+                    });
+                    alert("Alhamdulillah, akun berhasil diperbarui!");
+                    window.fetchAllFirebaseData();
+                } catch (err) {
+                    console.error("Gagal memperbarui akun:", err);
+                    alert("Terjadi kesalahan saat memperbarui akun.");
+                }
+            });
+        };
+
+        window.deleteAccount = async function(docId) {
+            if (!confirm("Apakah Anda yakin ingin menghapus akun ini dari sistem?")) return;
+
+            import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js").then(async ({ doc, deleteDoc }) => {
+                try {
+                    await deleteDoc(doc(db, "accounts", docId));
+                    alert("Akun berhasil dihapus.");
+                    window.fetchAllFirebaseData();
+                } catch (err) {
+                    console.error("Gagal menghapus akun:", err);
+                    alert("Terjadi kesalahan saat menghapus akun.");
+                }
+            });
         };
 			
     </script>
