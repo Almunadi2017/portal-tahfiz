@@ -1195,24 +1195,20 @@
             if(activeNav) activeNav.className = "flex items-center px-4 py-2.5 font-medium rounded-lg bg-emerald-600 text-white shadow-sm";
             document.getElementById('page-title').innerText = tabId.replace('-', ' ').toUpperCase();
 
-            // Refresh data saat tab diklik
+            // Panggil penyegaran data utama dari Firebase setiap ganti tab
             window.fetchAllFirebaseData();
 
-            // ATUR KEMUNCULAN FILTER MUTABAAH KHUSUS ADMIN & KEPSEK
-            const filterContainer = document.getElementById('container-filter-mutabaah');
-            if (filterContainer) {
-                if (tabId === 'data-mutabaah' && (window.currentUserRole === 'Admin' || window.currentUserRole === 'KepalaSekolah' || (window.currentUserRole || '').toLowerCase().includes('kepala'))) {
-                    filterContainer.classList.remove('hidden'); 
-                } else {
-                    filterContainer.classList.add('hidden');    
-                }
-            }
-            
-            // JIKA TAB DATA MUTABAAH DIBUKA, RENDER TABEL SESUAI ROLE
+            // PANGGIL FUNGSI RENDER SESUAI TAB YANG DIBUKA
             if (tabId === 'data-mutabaah') {
-                if (typeof window.renderAllTable === 'function') {
-                    window.renderAllTable(window.allSetoranData);
-                }
+                if (typeof window.renderAllTable === 'function') window.renderAllTable(window.allSetoranData);
+            } else if (tabId === 'kelola-halaqah') {
+                if (typeof window.renderHalaqahTable === 'function') window.renderHalaqahTable(window.allHalaqahData, window.allStudentsData);
+            } else if (tabId === 'kelola-siswa') {
+                if (typeof window.renderStudentsTable === 'function') window.renderStudentsTable(window.allStudentsData);
+            } else if (tabId === 'kelola-akun') {
+                if (typeof window.renderAccountsTable === 'function') window.renderAccountsTable(window.allAccountsData);
+            } else if (tabId === 'kenaikan-kelulusan') {
+                if (typeof window.renderPromotionTable === 'function') window.renderPromotionTable(window.allStudentsData);
             } else if (tabId === 'input-setoran') {
                 if (typeof window.populateStudentDropdowns === 'function') window.populateStudentDropdowns(window.allStudentsData);
                 if (typeof window.initSurahDropdown === 'function') window.initSurahDropdown();
