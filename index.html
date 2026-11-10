@@ -946,6 +946,8 @@
             } catch (err) {
                 console.error("Error fetching Firebase data:", err);
             }
+			
+			window.populateFilterDropdowns();
         };
 
         // Pemulihan Sesi Saat Halaman Dimuat / Direfresh
@@ -2158,6 +2160,45 @@
                         </tr>
                     `;
                 }).join('');
+        };
+		
+		
+		window.populateFilterDropdowns = function() {
+            // 1. Populate Dropdown Kelas
+            const selectKelas = document.getElementById('filter-mutabaah-kelas');
+            if (selectKelas) {
+                // Ambil daftar kelas unik dari data siswa atau data kelas
+                let kelasList = [];
+                if (window.allClassesData && window.allClassesData.length > 0) {
+                    kelasList = window.allClassesData.map(c => c.name || c.className || c);
+                } else if (window.allStudentsData && window.allStudentsData.length > 0) {
+                    kelasList = [...new Set(window.allStudentsData.map(s => s.kelas).filter(Boolean))];
+                } else {
+                    kelasList = ['VII-1', 'VII-2', 'VIII', 'IX']; // Cadangan jika data kosong
+                }
+
+                selectKelas.innerHTML = '<option value="">Semua Kelas</option>' + 
+                    kelasList.map(k => `<option value="${k}">${k}</option>`).join('');
+            }
+
+            // 2. Populate Dropdown Guru Tahfiz / Penguji
+            const selectGuru = document.getElementById('filter-mutabaah-guru');
+            if (selectGuru) {
+                let guruList = [];
+                if (window.allTeachersData && window.allTeachersData.length > 0) {
+                    guruList = window.allTeachersData.map(g => g.name || g.nama || g);
+                } else if (window.allAccountsData && window.allAccountsData.length > 0) {
+                    // Ambil dari data akun yang rolenya GuruTahfiz
+                    guruList = window.allAccountsData.filter(acc => (acc.role || '').toLowerCase().includes('guru') || (acc.role || '').toLowerCase().includes('tahfiz'))
+                                               .map(acc => acc.name || acc.nama || acc.username);
+                } else {
+                    // Cadangan ambil nama unik dari penguji yang ada di data setoran
+                    guruList = [...new Set((window.allSetoranData || []).map(st => st.penguji).filter(Boolean))];
+                }
+
+                selectGuru.innerHTML = '<option value="">Semua Guru / Penguji</option>' + 
+                    guruList.map(g => `<option value="${g}">${g}</option>`).join('');
+            }
         };
 			
     </script>
