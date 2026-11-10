@@ -324,6 +324,40 @@
                                 </div>
                                 <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-download"></i><span>Ekspor CSV</span></button>
                             </div>
+							<!-- FILTER KOMPREHENSIF DATA MUTABAAH -->
+        <div id="mutabaah-filter-section" class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4 text-xs">
+            <div>
+                <label class="block font-semibold text-slate-600 mb-1">Kelas:</label>
+                <select id="filter-mutabaah-kelas" onchange="applyMutabaahFilters()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 font-medium text-slate-800 focus:outline-none focus:border-emerald-600">
+                    <option value="">Semua Kelas</option>
+                    <option value="VII-1">VII-1</option>
+                    <option value="VII-2">VII-2</option>
+                    <option value="VIII">VIII</option>
+                    <option value="IX">IX</option>
+                </select>
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-600 mb-1">Siswa:</label>
+                <input type="text" id="filter-mutabaah-siswa" placeholder="Cari nama siswa..." oninput="applyMutabaahFilters()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 font-medium text-slate-800 focus:outline-none focus:border-emerald-600">
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-600 mb-1">Tanggal / Hari:</label>
+                <input type="date" id="filter-mutabaah-tanggal" onchange="applyMutabaahFilters()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 font-medium text-slate-800 focus:outline-none focus:border-emerald-600">
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-600 mb-1">Bulan:</label>
+                <input type="month" id="filter-mutabaah-bulan" onchange="applyMutabaahFilters()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 font-medium text-slate-800 focus:outline-none focus:border-emerald-600">
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-600 mb-1">Guru Tahfiz / Penguji:</label>
+                <select id="filter-mutabaah-guru" onchange="applyMutabaahFilters()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 font-medium text-slate-800 focus:outline-none focus:border-emerald-600">
+                    <option value="">Semua Guru / Penguji</option>
+                    <option value="Muhammad Lufti Gultom">Muhammad Lufti Gultom, S.Pd</option>
+                    <option value="Muhammad Bayu Undiha">Muhammad Bayu Undiha</option>
+                    <option value="Abdul Rahman">Abdul Rahman</option>
+                </select>
+            </div>
+        </div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse text-xs">
@@ -2046,6 +2080,73 @@
 
         window.exportExcelMonev = function() {
             alert("Fitur pengunduhan laporan rekapitulasi Excel (.xlsx) berhasil diproses untuk Kepala Sekolah.");
+        };
+		
+		
+		window.applyMutabaahFilters = function() {
+            let filtered = window.allSetoranData || [];
+
+            const fKelas = document.getElementById('filter-mutabaah-kelas')?.value;
+            const fSiswa = document.getElementById('filter-mutabaah-siswa')?.value?.toLowerCase().trim();
+            const fTanggal = document.getElementById('filter-mutabaah-tanggal')?.value;
+            const fBulan = document.getElementById('filter-mutabaah-bulan')?.value;
+            const fGuru = document.getElementById('filter-mutabaah-guru')?.value?.toLowerCase();
+
+            // 1. Filter Kelas (Mencocokkan siswa berdasarkan kelasnya di allStudentsData)
+            if (fKelas) {
+                const siswaKelasNames = (window.allStudentsData || []).filter(s => s.kelas === fKelas).map(s => s.name.toLowerCase());
+                filtered = filtered.filter(i => siswaKelasNames.includes((i.siswa || '').toLowerCase()));
+            }
+
+            // 2. Filter Nama Siswa
+            if (fSiswa) {
+                filtered = filtered.filter(i => (i.siswa || '').toLowerCase().includes(fSiswa));
+            }
+
+            // 3. Filter Tanggal / Hari Tertentu
+            if (fTanggal) {
+                filtered = filtered.filter(i => i.timestamp && i.timestamp.startsWith(fTanggal));
+            }
+
+            // 4. Filter Bulan
+            if (fBulan) {
+                filtered = filtered.filter(i => i.timestamp && i.timestamp.startsWith(fBulan));
+            }
+
+            // 5. Filter Guru Tahfiz / Penguji
+            if (FGuru) {
+                filtered = filtered.filter(i => (i.penguji || '').toLowerCase().includes(fGuru));
+            }
+
+            // Render ulang tabel Mutabaah dengan data yang sudah disaring
+            window.renderMutabaahTable(filtered);
+        };
+
+        // Fungsi pembantu render tabel mutabaah (jika belum ada)
+        window.renderMutabaahTable = function(list) {
+            const tbody = document.getElementById('mutabaah-table-body'); // Sesuaikan dengan id tbody tabel mutabaah Anda
+            if (!tbody) return;
+
+            const displayList = list || window.allSetoranData || [];
+
+            tbody.innerHTML = displayList.length === 0 
+                ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Tidak ada riwayat mutabaah yang sesuai dengan filter.</td></tr>'
+                : displayList.map(item => {
+                    const studentInfo = (window.allStudentsData || []).find(s => s.name && s.name.toLowerCase() === (item.siswa || '').toLowerCase());
+                    const kelasSiswa = studentInfo ? studentInfo.kelas : '-';
+
+                    return `
+                        <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs">
+                            <td class="py-3 px-4 text-slate-500">${item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID') : '-'}</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">${item.siswa || '-'} <br><span class="text-[10px] text-blue-600 font-semibold">Kelas: ${kelasSiswa}</span></td>
+                            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded font-semibold">${item.jenis || 'Ziyadah'}</span></td>
+                            <td class="py-3 px-4">${item.surah || '-'} (Ayat ${item.ayatMulai || 1}-${item.ayatSelesai || 1})</td>
+                            <td class="py-3 px-4 font-semibold">Juz ${item.juz || '-'}</td>
+                            <td class="py-3 px-4 text-indigo-600 font-semibold">${item.kualitas || '-'}</td>
+                            <td class="py-3 px-4 text-slate-500">${item.penguji || '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
         };
 			
     </script>
