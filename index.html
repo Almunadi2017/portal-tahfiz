@@ -2113,81 +2113,85 @@
         };
 		
 		window.renderMonevEksekutifView = function() {
-         const tabMonev = document.getElementById('tab-monev-eksekutif');
-         if (!tabMonev) return;
+            const tabMonev = document.getElementById('tab-monev-eksekutif');
+            if (!tabMonev) return;
 
-         // Hapus kelas hidden agar tampil
-         tabMonev.classList.remove('hidden');
+            // WAJIB: Buka pembungkus tab agar tampil di layar
+            tabMonev.classList.remove('hidden');
 
-         // Hitung rekapitulasi per kelompok halaqah secara dinamis
-         const halaqahSummary = (window.allHalaqahData || []).map(h => {
-             const santriBinaan = (window.allStudentsData || []).filter(s => s.idHalaqah === (h.id || h.idHalaqah));
-             const santriNames = santriBinaan.map(s => (s.name || '').toLowerCase());
-             const setoranHalaqah = (window.allSetoranData || []).filter(st => santriNames.includes((st.siswa || '').toLowerCase()));
+            // Hitung rekapitulasi per kelompok halaqah secara dinamis
+            const halaqahSummary = (window.allHalaqahData || []).map(h => {
+                const santriBinaan = (window.allStudentsData || []).filter(s => s.idHalaqah === (h.id || h.idHalaqah));
+                const santriNames = santriBinaan.map(s => (s.name || '').toLowerCase());
+                const setoranHalaqah = (window.allSetoranData || []).filter(st => santriNames.includes((st.siswa || '').toLowerCase()));
+                
+                return {
+                    id: h.idHalaqah || h.id || '-',
+                    name: h.name || 'Kelompok Halaqah',
+                    teacher: h.teacher || 'Ustadz Pembimbing',
+                    totalSantri: santriBinaan.length,
+                    totalSetoran: setoranHalaqah.length,
+                    ziyadahCount: setoranHalaqah.filter(st => st.jenis === 'Ziyadah').length,
+                    murajaahCount: setoranHalaqah.filter(st => st.jenis === 'Murajaah').length
+                };
+            });
 
-             return {
-                 id: h.idHalaqah || h.id || '-',
-                 name: h.name || 'Kelompok Halaqah',
-                 teacher: h.teacher || 'Ustadz Pembimbing',
-                 totalSantri: santriBinaan.length,
-                 totalSetoran: setoranHalaqah.length,
-                 ziyadahCount: setoranHalaqah.filter(st => st.jenis === 'Ziyadah').length,
-                 murajaahCount: setoranHalaqah.filter(st => st.jenis === 'Murajaah').length
-             };
-         });
+            tabMonev.innerHTML = `
+                <div class="space-y-6">
+                    <!-- KARTU BANNER MONEV -->
+                    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-6 rounded-2xl shadow-lg border-l-4 border-amber-500 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-xl font-bold">Rekapitulasi Monitoring & Evaluasi Tahfiz</h2>
+                            <p class="text-xs text-slate-300 mt-1">Laporan komprehensif capaian kelompok halaqah SMP Swasta IT Al Munadi</p>
+                        </div>
+                        <button onclick="exportExcelMonev()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-2">
+                            <i class="fa-solid fa-file-excel text-sm"></i>
+                            <span>Ekspor Rekap Laporan (.xlsx)</span>
+                        </button>
+                    </div>
 
-         tabMonev.innerHTML = `
-             <div class="space-y-6">
-                 <!-- KARTU BANNER MONEV -->
-                 <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-6 rounded-2xl shadow-lg border-l-4 border-amber-500 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                     <div>
-                         <h2 class="text-xl font-bold">Rekapitulasi Monitoring & Evaluasi Tahfiz</h2>
-                         <p class="text-xs text-slate-300 mt-1">Laporan komprehensif capaian kelompok halaqah SMP Swasta IT Al Munadi</p>
-                     </div>
-                     <button onclick="exportExcelMonev()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-2">
-                         <i class="fa-solid fa-file-excel text-sm"></i>
-                         <span>Ekspor Rekap Laporan (.xlsx)</span>
-                     </button>
-                 </div>
+                    <!-- TABEL RINGKASAN HALAQAH -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-5 border-b border-slate-100 font-bold text-slate-800 text-sm flex items-center space-x-2">
+                            <i class="fa-solid fa-chart-pie text-emerald-600"></i>
+                            <span>Ringkasan Kinerja Kelompok Halaqah & Capaian Hafalan</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                        <th class="py-3 px-4 font-semibold">ID Halaqah</th>
+                                        <th class="py-3 px-4 font-semibold">Nama Kelompok</th>
+                                        <th class="py-3 px-4 font-semibold">Ustadz Pembimbing</th>
+                                        <th class="py-3 px-4 font-semibold text-center">Jumlah Santri</th>
+                                        <th class="py-3 px-4 font-semibold text-center">Total Setoran</th>
+                                        <th class="py-3 px-4 font-semibold text-center">Ziyadah (Baru)</th>
+                                        <th class="py-3 px-4 font-semibold text-center">Murajaah (Ulang)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-slate-700">
+                                    ${halaqahSummary.length === 0 ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data halaqah.</td></tr>' : halaqahSummary.map(h => `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="py-3 px-4 font-bold text-slate-900">${h.id}</td>
+                                            <td class="py-3 px-4 font-semibold text-slate-800">${h.name}</td>
+                                            <td class="py-3 px-4 font-medium">${h.teacher}</td>
+                                            <td class="py-3 px-4 text-center"><span class="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg font-semibold">${h.totalSantri} Santri</span></td>
+                                            <td class="py-3 px-4 text-center font-bold">${h.totalSetoran}</td>
+                                            <td class="py-3 px-4 text-center text-emerald-600 font-semibold">${h.ziyadahCount}</td>
+                                            <td class="py-3 px-4 text-center text-indigo-600 font-semibold">${h.murajaahCount}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
 
-                 <!-- TABEL RINGKASAN HALAQAH -->
-                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                     <div class="p-5 border-b border-slate-100 font-bold text-slate-800 text-sm flex items-center space-x-2">
-                         <i class="fa-solid fa-chart-pie text-emerald-600"></i>
-                         <span>Ringkasan Kinerja Kelompok Halaqah & Capaian Hafalan</span>
-                     </div>
-                     <div class="overflow-x-auto">
-                         <table class="w-full text-left border-collapse text-xs">
-                             <thead>
-                                 <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
-                                     <th class="py-3 px-4 font-semibold">ID Halaqah</th>
-                                     <th class="py-3 px-4 font-semibold">Nama Kelompok</th>
-                                     <th class="py-3 px-4 font-semibold">Ustadz Pembimbing</th>
-                                     <th class="py-3 px-4 font-semibold text-center">Jumlah Santri</th>
-                                     <th class="py-3 px-4 font-semibold text-center">Total Setoran</th>
-                                     <th class="py-3 px-4 font-semibold text-center">Ziyadah (Baru)</th>
-                                     <th class="py-3 px-4 font-semibold text-center">Murajaah (Ulang)</th>
-                                 </tr>
-                             </thead>
-                             <tbody class="divide-y divide-slate-100 text-slate-700">
-                                 ${halaqahSummary.length === 0 ? '<tr><td colspan="7" class="py-4 text-center text-slate-400">Belum ada data halaqah.</td></tr>' : halaqahSummary.map(h => `
-                                     <tr class="hover:bg-slate-50">
-                                         <td class="py-3 px-4 font-bold text-slate-900">${h.id}</td>
-                                         <td class="py-3 px-4 font-semibold text-slate-800">${h.name}</td>
-                                         <td class="py-3 px-4 font-medium">${h.teacher}</td>
-                                         <td class="py-3 px-4 text-center"><span class="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg font-semibold">${h.totalSantri} Santri</span></td>
-                                         <td class="py-3 px-4 text-center font-bold">${h.totalSetoran}</td>
-                                         <td class="py-3 px-4 text-center text-emerald-600 font-semibold">${h.ziyadahCount}</td>
-                                         <td class="py-3 px-4 text-center text-indigo-600 font-semibold">${h.murajaahCount}</td>
-                                     </tr>
-                                 `).join('')}
-                             </tbody>
-                         </table>
-                     </div>
-                 </div>
-             </div>
-         `;
-     };
+        window.exportExcelMonev = function() {
+            alert("Fitur pengunduhan laporan rekapitulasi Excel (.xlsx) berhasil diproses untuk Kepala Sekolah.");
+        };
 
      window.exportExcelMonev = function() {
          alert("Fitur pengunduhan laporan rekapitulasi Excel (.xlsx) berhasil diproses untuk Kepala Sekolah.");
