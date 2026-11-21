@@ -2429,6 +2429,30 @@
         });
     }
 });
+
+
+window.syncGuruMutabaahDropdown = function() {
+    const selectGuru = document.getElementById('filter-mutabaah-guru');
+    if (!selectGuru) return;
+
+    const pilihanSebelumnya = selectGuru.value;
+    const daftarGuru = (window.allAccountsData || [])
+        .filter(acc => {
+            const peran = (acc.role || '').toLowerCase().trim();
+            return peran === 'gurutahfiz' || peran.includes('guru') || peran.includes('tahfiz');
+        })
+        .map(acc => (acc.name || acc.nama || '').trim())
+        .filter(Boolean);
+
+    const guruUnik = [...new Set(daftarGuru)];
+
+    selectGuru.innerHTML = '<option value="">Semua Guru / Penguji</option>' +
+        guruUnik.map(nama => `<option value="${nama}">${nama}</option>`).join('');
+
+    if (pilihanSebelumnya && guruUnik.includes(pilihanSebelumnya)) {
+        selectGuru.value = pilihanSebelumnya;
+    }
+};
 		
     </script>
    
